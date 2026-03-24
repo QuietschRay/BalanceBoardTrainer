@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Balance Board Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f0e;
+    --surface: #161715;
+    --surface2: #1e1f1d;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e6e0;
+    --text2: #8a8880;
+    --text3: #5a5856;
+    --accent: #b8e04a;
+    --accent2: #7db82e;
+    --accent-dim: rgba(184,224,74,0.12);
+    --accent-glow: rgba(184,224,74,0.06);
+    --warn: #e0a84a;
+    --warn-dim: rgba(224,168,74,0.12);
+    --radius: 12px;
+    --radius-lg: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(184,224,74,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+  /* Header */
+  header { margin-bottom: 2.5rem; }
+  .header-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+  h1 { font-size: 28px; font-weight: 300; color: var(--text); line-height: 1.2; }
+  h1 span { font-weight: 500; }
+  .header-sub { font-size: 13px; color: var(--text2); margin-top: 0.4rem; }
+
+  /* Progress bar */
+  .progress-wrap { margin-bottom: 2rem; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text3); margin-bottom: 6px; font-family: 'DM Mono', monospace; }
+  .progress-track { height: 3px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s ease; }
+
+  /* Week tabs */
+  .week-tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+  .wtab {
+    flex: 1;
+    padding: 8px 10px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text2);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s ease;
+    line-height: 1.4;
+  }
+  .wtab:hover { border-color: var(--border2); color: var(--text); }
+  .wtab.active {
+    background: var(--accent-dim);
+    border-color: rgba(184,224,74,0.3);
+    color: var(--accent);
+  }
+  .wtab-num { display: block; font-size: 15px; font-weight: 500; margin-bottom: 1px; }
+
+  /* Week header */
+  .week-header { margin-bottom: 1rem; }
+  .week-title { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .tip-box {
+    background: var(--warn-dim);
+    border: 0.5px solid rgba(224,168,74,0.2);
+    border-radius: var(--radius);
+    padding: 0.65rem 1rem;
+    font-size: 13px;
+    color: var(--warn);
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+  }
+  .tip-icon { margin-right: 5px; }
+
+  /* Timer */
+  .timer-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .timer-left { flex: 1; }
+  .timer-lbl { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
+  .timer-display { font-family: 'DM Mono', monospace; font-size: 32px; font-weight: 500; color: var(--text); letter-spacing: 0.04em; }
+  .timer-display.running { color: var(--accent); }
+  .timer-display.done { color: var(--accent2); }
+  .timer-presets { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .preset-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 9px;
+    border: 0.5px solid var(--border);
+    border-radius: 99px;
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: var(--border2); color: var(--text2); }
+  .preset-btn.active { border-color: rgba(184,224,74,0.4); color: var(--accent); background: var(--accent-dim); }
+  .timer-btns { display: flex; flex-direction: column; gap: 6px; }
+  .tbtn {
+    padding: 8px 18px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tbtn-start { background: var(--accent); color: #0e0f0e; }
+  .tbtn-start:hover { background: #c9f055; }
+  .tbtn-start.active { background: #e05a5a; color: #fff; }
+  .tbtn-reset { background: var(--surface2); color: var(--text2); border: 0.5px solid var(--border); }
+  .tbtn-reset:hover { color: var(--text); border-color: var(--border2); }
+
+  /* Section heading */
+  .section-heading {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin: 1.5rem 0 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-heading::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+
+  /* Exercise cards */
+  .ex-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .ex-card:hover { border-color: var(--border2); background: var(--surface2); }
+  .ex-card.done { border-color: rgba(184,224,74,0.2); }
+  .ex-card.done::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 99px 0 0 99px;
+  }
+
+  .ex-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text3);
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.18s;
+  }
+  .ex-card.done .ex-num { background: var(--accent-dim); color: var(--accent); }
+
+  .ex-body { flex: 1; min-width: 0; }
+  .ex-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .ex-card.done .ex-name { color: var(--text2); }
+  .ex-desc { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 7px; }
+  .ex-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 2px 9px;
+    border-radius: 99px;
+    border: 0.5px solid var(--border);
+    color: var(--text3);
+  }
+  .badge-green { background: var(--accent-dim); border-color: rgba(184,224,74,0.2); color: var(--accent2); }
+  .badge-time { background: var(--surface2); }
+
+  .check-hint { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: 'DM Mono', monospace; }
+
+  /* Progress summary */
+  .summary-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .summary-card {
+    flex: 1;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+  }
+  .summary-val { font-size: 22px; font-weight: 500; color: var(--text); font-family: 'DM Mono', monospace; }
+  .summary-val.accent { color: var(--accent); }
+  .summary-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Completion banner */
+  .complete-banner {
+    background: var(--accent-dim);
+    border: 0.5px solid rgba(184,224,74,0.3);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    text-align: center;
+    margin-top: 1.5rem;
+    display: none;
+  }
+  .complete-banner.show { display: block; }
+  .complete-banner h3 { font-size: 16px; color: var(--accent); margin-bottom: 4px; }
+  .complete-banner p { font-size: 13px; color: var(--text2); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  @media (max-width: 480px) {
+    .app { padding: 1.25rem 1rem 3rem; }
+    h1 { font-size: 22px; }
+    .timer-display { font-size: 26px; }
+    .summary-val { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="header-label">Idiana Balance Board</div>
+    <h1>Dein <span>Trainingsplan</span></h1>
+    <div class="header-sub">6 Wochen · ~15 Minuten täglich · Anfänger</div>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="progressLabel">Woche 1–2 · Aufbau</span>
+      <span id="progressPct">0 %</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="week-tabs" id="weekTabs"></div>
+
+  <div class="summary-bar">
+    <div class="summary-card">
+      <div class="summary-val accent" id="doneCount">0</div>
+      <div class="summary-lbl">Erledigt heute</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-val" id="totalCount">0</div>
+      <div class="summary-lbl">Übungen total</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-val" id="totalMin">15</div>
+      <div class="summary-lbl">Minuten</div>
+    </div>
+  </div>
+
+  <div class="week-header">
+    <div class="week-title" id="weekTitle"></div>
+    <div class="tip-box" id="tipBox"></div>
+  </div>
+
+  <div class="timer-card">
+    <div class="timer-left">
+      <div class="timer-lbl">Übungs-Timer</div>
+      <div class="timer-display" id="timerDisplay">00:30</div>
+      <div class="timer-presets">
+        <button class="preset-btn active" onclick="setPreset(30, this)">30s</button>
+        <button class="preset-btn" onclick="setPreset(60, this)">1 min</button>
+        <button class="preset-btn" onclick="setPreset(120, this)">2 min</button>
+        <button class="preset-btn" onclick="setPreset(180, this)">3 min</button>
+      </div>
+    </div>
+    <div class="timer-btns">
+      <button class="tbtn tbtn-start" id="timerStart" onclick="toggleTimer()">Start</button>
+      <button class="tbtn tbtn-reset" onclick="resetTimer()">Reset</button>
+    </div>
+  </div>
+
+  <div id="exerciseList"></div>
+
+  <div class="complete-banner" id="completeBanner">
+    <h3>🎉 Einheit abgeschlossen!</h3>
+    <p>Alle Übungen für heute erledigt. Morgen weitermachen!</p>
+  </div>
+
+</div>
+
+<script>
+const weeks = [
+  {
+    label: "Woche 1–2",
+    title: "Gleichgewicht aufbauen",
+    tip: "Stelle das Board nahe einer Wand auf. Barfuss üben gibt besseres Feedback. Noch keine grossen Kippbewegungen.",
+    sections: [
+      { name: "Aufwärmen", items: [
+        { name: "Standübung mit Support", desc: "Auf das Board stellen, Wand halten. Gleichgewichtspunkt finden – noch keine Kippbewegung.", time: "2 min", tip: "Ruhig atmen" },
+        { name: "Gewichtsverlagerung seitlich", desc: "Langsam von links nach rechts verlagern, Board leicht neigen. Nicht bis zum Anschlag kippen.", time: "2 min", tip: "Kontrolliert" }
+      ]},
+      { name: "Hauptteil", items: [
+        { name: "Freistehend halten", desc: "Board ohne Wandstütze ausbalancieren. Notiere deine beste Haltezeit.", time: "3 × 30 Sek.", tip: "Blick fixieren" },
+        { name: "Vor-/Rückwärtskippen", desc: "Gleichmässige, kontrollierte Vor-Rück-Bewegung. Amplitude langsam steigern.", time: "2 × 1 min", tip: "Knie weich" },
+        { name: "Seitliches Kippen", desc: "Links-rechts in gleichmässigem Rhythmus. Körpermitte angespannt halten.", time: "2 × 1 min", tip: "Hüfte ruhig" }
+      ]},
+      { name: "Cool-down", items: [
+        { name: "Sanftes Balancieren", desc: "Entspannt stehen, leichte Ausgleichsbewegungen zulassen. Augen schliessen als Bonus.", time: "2 min", tip: "Locker lassen" }
+      ]}
+    ]
+  },
+  {
+    label: "Woche 3–4",
+    title: "Stabilität & Kontrolle",
+    tip: "Wandunterstützung weglassen. Konzentriere dich auf saubere, gezielte Bewegungen – Qualität vor Dauer.",
+    sections: [
+      { name: "Aufwärmen", items: [
+        { name: "Aufwärmbalance", desc: "Frei auf dem Board stehen, alle Richtungen leicht antasten. Board nie bis zum Anschlag kippen.", time: "2 min", tip: "Einschwingen" }
+      ]},
+      { name: "Hauptteil", items: [
+        { name: "Gezielte Kreisbewegung", desc: "Board kreisförmig führen – vorne über rechts nach hinten und links. Beide Richtungen üben.", time: "3 × 1 min", tip: "Ruhig und rund" },
+        { name: "Arm-Variationen", desc: "Arme in verschiedene Positionen bringen während du balancierst: ausgestreckt, über Kopf, vor der Brust.", time: "2 × 1 min", tip: "Kern anspannen" },
+        { name: "Haltezeiten steigern", desc: "Board waagerecht halten ohne Bodenkontakt. Ziel: 60 Sekunden am Stück.", time: "4 × max", tip: "Zählen hilft" },
+        { name: "Kniebeugen auf dem Board", desc: "Leichte Kniebeugen (10–15 cm) während du balancierst. Sehr langsam ausführen.", time: "2 × 5 Wdh.", tip: "Keine Eile" }
+      ]},
+      { name: "Cool-down", items: [
+        { name: "Entspannungsstand", desc: "Augen geschlossen auf dem Board stehen. Auf die Körperwahrnehmung konzentrieren.", time: "2 min", tip: "Tief atmen" }
+      ]}
+    ]
+  },
+  {
+    label: "Woche 5–6",
+    title: "Ausdauer & Herausforderung",
+    tip: "Du spürst jetzt echte Fortschritte! Übungen kombinieren und kontrolliert an Grenzen herantasten.",
+    sections: [
+      { name: "Aufwärmen", items: [
+        { name: "Dynamischer Einstieg", desc: "Seitlich auf das Board aufsteigen und sofort balancieren. Sprunggelenke vorher kreisen.", time: "1 min", tip: "Sprunggelenke warm" }
+      ]},
+      { name: "Hauptteil", items: [
+        { name: "Einbeiniges Balancieren", desc: "Auf einem Bein auf dem Board stehen. Das andere Bein leicht angehoben. Alle 20 Sek. wechseln.", time: "3 × 20 Sek.", tip: "Fuss locker" },
+        { name: "Ball fangen/werfen", desc: "Leichten Ball gegen die Wand werfen und fangen – während du auf dem Board balancierst.", time: "3 × 1 min", tip: "Kleiner Ball" },
+        { name: "Augen-zu-Balance", desc: "Mit geschlossenen Augen balancieren. Das vestibuläre System wird viel stärker beansprucht.", time: "3 × 30 Sek.", tip: "Sicher stehen" },
+        { name: "Kombinations-Flow", desc: "Kreisbewegung + leichte Kniebeuge + Arm-Overhead: alle drei kombiniert durchführen.", time: "2 × 2 min", tip: "Fliessen lassen" }
+      ]},
+      { name: "Cool-down", items: [
+        { name: "Cool-down Balance", desc: "Langsames, bewusstes Balancieren – Bewegungen verlangsamen, Körper beruhigen.", time: "2 min", tip: "Abschalten" }
+      ]}
+    ]
+  }
+];
+
+// State
+let currentWeek = 0;
+let timerSeconds = 30;
+let timerRunning = false;
+let timerInterval = null;
+let presetSeconds = 30;
+// done[week][sectionIdx][itemIdx] = bool
+let done = weeks.map(w => w.sections.map(s => s.items.map(() => false)));
+
+function saveDone() {
+  try { localStorage.setItem('bb_done', JSON.stringify(done)); } catch(e){}
+}
+function loadDone() {
+  try {
+    const s = localStorage.getItem('bb_done');
+    if (s) done = JSON.parse(s);
+  } catch(e){}
+}
+loadDone();
+
+function totalItems(w) {
+  return weeks[w].sections.reduce((a, s) => a + s.items.length, 0);
+}
+function doneItems(w) {
+  return done[w].reduce((a, s) => a + s.filter(Boolean).length, 0);
+}
+
+function renderTabs() {
+  const el = document.getElementById('weekTabs');
+  el.innerHTML = '';
+  weeks.forEach((w, i) => {
+    const d = doneItems(i), t = totalItems(i);
+    const pct = t ? Math.round(d/t*100) : 0;
+    const btn = document.createElement('button');
+    btn.className = 'wtab' + (i === currentWeek ? ' active' : '');
+    btn.innerHTML = `<span class="wtab-num">${w.label}</span>${pct > 0 ? pct+'%' : w.title.split(' ')[0]}`;
+    btn.onclick = () => { currentWeek = i; renderAll(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderProgress() {
+  const w = weeks[currentWeek];
+  const d = doneItems(currentWeek), t = totalItems(currentWeek);
+  const pct = t ? Math.round(d/t*100) : 0;
+  document.getElementById('progressLabel').textContent = w.label + ' · ' + w.title;
+  document.getElementById('progressPct').textContent = pct + ' %';
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('doneCount').textContent = d;
+  document.getElementById('totalCount').textContent = t;
+}
+
+function renderExercises() {
+  const w = weeks[currentWeek];
+  document.getElementById('weekTitle').textContent = w.title;
+  document.getElementById('tipBox').innerHTML = '<span class="tip-icon">💡</span>' + w.tip;
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = '';
+
+  w.sections.forEach((sec, si) => {
+    const sh = document.createElement('div');
+    sh.className = 'section-heading';
+    sh.textContent = sec.name;
+    list.appendChild(sh);
+
+    sec.items.forEach((ex, ei) => {
+      const isDone = done[currentWeek][si][ei];
+      const card = document.createElement('div');
+      card.className = 'ex-card' + (isDone ? ' done' : '');
+      card.innerHTML = `
+        <div class="ex-num">${isDone ? '✓' : (ei+1)}</div>
+        <div class="ex-body">
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-desc">${ex.desc}</div>
+          <div class="ex-meta">
+            <span class="badge badge-time">⏱ ${ex.time}</span>
+            <span class="badge badge-green">${ex.tip}</span>
+          </div>
+          <div class="check-hint">${isDone ? 'Erledigt ✓' : 'Tippen zum Abhaken'}</div>
+        </div>`;
+      card.onclick = () => {
+        done[currentWeek][si][ei] = !done[currentWeek][si][ei];
+        saveDone();
+        renderAll();
+      };
+      list.appendChild(card);
+    });
+  });
+
+  // Completion banner
+  const allDone = doneItems(currentWeek) === totalItems(currentWeek);
+  document.getElementById('completeBanner').classList.toggle('show', allDone);
+}
+
+function renderAll() {
+  renderTabs();
+  renderProgress();
+  renderExercises();
+}
+
+// Timer
+function updateDisplay() {
+  const m = Math.floor(timerSeconds / 60).toString().padStart(2,'0');
+  const s = (timerSeconds % 60).toString().padStart(2,'0');
+  const el = document.getElementById('timerDisplay');
+  el.textContent = m + ':' + s;
+  el.className = 'timer-display' + (timerRunning ? ' running' : timerSeconds === 0 ? ' done' : '');
+}
+
+function toggleTimer() {
+  const btn = document.getElementById('timerStart');
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    btn.textContent = 'Start';
+    btn.classList.remove('active');
+  } else {
+    if (timerSeconds === 0) timerSeconds = presetSeconds;
+    timerRunning = true;
+    btn.textContent = 'Stopp';
+    btn.classList.add('active');
+    timerInterval = setInterval(() => {
+      if (timerSeconds > 0) {
+        timerSeconds--;
+        updateDisplay();
+      } else {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        btn.textContent = 'Start';
+        btn.classList.remove('active');
+      }
+    }, 1000);
+  }
+  updateDisplay();
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = presetSeconds;
+  const btn = document.getElementById('timerStart');
+  btn.textContent = 'Start';
+  btn.classList.remove('active');
+  updateDisplay();
+}
+
+function setPreset(secs, el) {
+  presetSeconds = secs;
+  timerSeconds = secs;
+  clearInterval(timerInterval);
+  timerRunning = false;
+  document.getElementById('timerStart').textContent = 'Start';
+  document.getElementById('timerStart').classList.remove('active');
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  updateDisplay();
+}
+
+renderAll();
+updateDisplay();
+</script>
+</body>
+</html>
