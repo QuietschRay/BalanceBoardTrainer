@@ -9,22 +9,12 @@
 <script src="https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0e0f0e;
-    --surface: #161715;
-    --surface2: #1e1f1d;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text: #e8e6e0;
-    --text2: #8a8880;
-    --text3: #5a5856;
-    --accent: #b8e04a;
-    --accent2: #7db82e;
-    --accent-dim: rgba(184,224,74,0.12);
-    --warn: #e0a84a;
-    --warn-dim: rgba(224,168,74,0.12);
-    --blue: #4a9ee0;
-    --radius: 12px;
-    --radius-lg: 18px;
+    --bg: #0e0f0e; --surface: #161715; --surface2: #1e1f1d;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+    --text: #e8e6e0; --text2: #8a8880; --text3: #5a5856;
+    --accent: #b8e04a; --accent2: #7db82e; --accent-dim: rgba(184,224,74,0.12);
+    --warn: #e0a84a; --warn-dim: rgba(224,168,74,0.12);
+    --blue: #4a9ee0; --radius: 12px; --radius-lg: 18px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; min-height: 100vh; -webkit-font-smoothing: antialiased; }
@@ -59,13 +49,27 @@
   .nav-btn.active { color: var(--accent); }
 
   /* Header */
-  header { margin-bottom: 2rem; }
+  header { margin-bottom: 1.5rem; }
   .header-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem; }
   h1 { font-size: 26px; font-weight: 300; }
   h1 span { font-weight: 500; }
   .header-sub { font-size: 13px; color: var(--text2); margin-top: 0.3rem; }
   .logout-btn { float: right; margin-top: 4px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); background: none; border: none; cursor: pointer; letter-spacing: 0.06em; }
   .logout-btn:hover { color: var(--text2); }
+
+  /* Date picker bar */
+  .date-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.7rem 1rem; margin-bottom: 1.25rem; }
+  .date-arrow { width: 30px; height: 30px; border-radius: var(--radius); background: transparent; border: 0.5px solid var(--border); color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; transition: all 0.15s; }
+  .date-arrow:hover { border-color: var(--border2); color: var(--text); }
+  .date-arrow:disabled { opacity: 0.25; cursor: not-allowed; }
+  .date-center { flex: 1; text-align: center; }
+  .date-main { font-size: 14px; font-weight: 500; color: var(--text); font-family: 'DM Mono', monospace; }
+  .date-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .date-today-btn { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 99px; border: 0.5px solid rgba(184,224,74,0.3); background: var(--accent-dim); color: var(--accent); cursor: pointer; flex-shrink: 0; transition: all 0.15s; }
+  .date-today-btn:hover { background: rgba(184,224,74,0.2); }
+  .date-today-btn.hidden { visibility: hidden; }
+  .date-past-notice { font-size: 12px; color: var(--warn); background: var(--warn-dim); border: 0.5px solid rgba(224,168,74,0.2); border-radius: var(--radius); padding: 0.5rem 0.9rem; margin-bottom: 1rem; display: none; }
+  .date-past-notice.show { display: block; }
 
   /* Week tabs */
   .week-tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
@@ -89,6 +93,10 @@
 
   /* Tip */
   .tip-box { background: var(--warn-dim); border: 0.5px solid rgba(224,168,74,0.2); border-radius: var(--radius); padding: 0.65rem 1rem; font-size: 13px; color: var(--warn); line-height: 1.5; margin-bottom: 1.25rem; }
+
+  /* Error */
+  .err-banner { background: rgba(224,90,90,0.1); border: 0.5px solid rgba(224,90,90,0.3); border-radius: var(--radius); padding: 0.65rem 1rem; font-size: 13px; color: #e05a5a; margin-bottom: 1rem; display: none; }
+  .err-banner.show { display: block; }
 
   /* Timer */
   .timer-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
@@ -158,8 +166,6 @@
   .wpr-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s ease; }
   .wpr-pct { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text2); width: 34px; text-align: right; flex-shrink: 0; }
   .no-data { font-size: 13px; color: var(--text3); text-align: center; padding: 2rem 0; font-family: 'DM Mono', monospace; }
-  .err-banner { background: rgba(224,90,90,0.1); border: 0.5px solid rgba(224,90,90,0.3); border-radius: var(--radius); padding: 0.65rem 1rem; font-size: 13px; color: #e05a5a; margin-bottom: 1rem; display: none; }
-  .err-banner.show { display: block; }
 
   /* Loading */
   .loading-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
@@ -212,9 +218,22 @@
 
     <!-- Training tab -->
     <div id="tabTraining">
+
+      <!-- Date bar -->
+      <div class="date-bar">
+        <button class="date-arrow" id="datePrev" onclick="changeDate(-1)">&#8592;</button>
+        <div class="date-center">
+          <div class="date-main" id="dateMain"></div>
+          <div class="date-sub" id="dateSub"></div>
+        </div>
+        <button class="date-today-btn hidden" id="dateTodayBtn" onclick="goToToday()">Heute</button>
+        <button class="date-arrow" id="dateNext" onclick="changeDate(1)">&#8594;</button>
+      </div>
+      <div class="date-past-notice" id="datePastNotice">Vergangener Tag – Einträge werden nachgetragen.</div>
+
       <div class="week-tabs" id="weekTabs"></div>
       <div class="summary-bar">
-        <div class="summary-card"><div class="summary-val accent" id="doneCount">0</div><div class="summary-lbl">Erledigt heute</div></div>
+        <div class="summary-card"><div class="summary-val accent" id="doneCount">0</div><div class="summary-lbl">Erledigt</div></div>
         <div class="summary-card"><div class="summary-val" id="totalCount">0</div><div class="summary-lbl">Übungen total</div></div>
         <div class="summary-card"><div class="summary-val">15</div><div class="summary-lbl">Minuten</div></div>
       </div>
@@ -243,7 +262,7 @@
       <div id="exerciseList"></div>
       <div class="complete-banner" id="completeBanner">
         <h3>Einheit abgeschlossen!</h3>
-        <p>Alle Übungen für heute erledigt. Morgen weitermachen!</p>
+        <p>Alle Übungen erledigt. Weiter so!</p>
       </div>
     </div>
 
@@ -254,7 +273,7 @@
         <div class="stat-cards">
           <div class="stat-card"><div class="stat-card-val green" id="statStreak">0</div><div class="stat-card-lbl">Tage in Folge</div><div class="stat-card-sub" id="statStreakSub"></div></div>
           <div class="stat-card"><div class="stat-card-val blue" id="statTotalDays">0</div><div class="stat-card-lbl">Trainingstage total</div><div class="stat-card-sub">von 42 möglich</div></div>
-          <div class="stat-card"><div class="stat-card-val warn" id="statExercises">0</div><div class="stat-card-lbl">Übungen absolviert</div><div class="stat-card-sub"></div></div>
+          <div class="stat-card"><div class="stat-card-val warn" id="statExercises">0</div><div class="stat-card-lbl">Übungen absolviert</div></div>
           <div class="stat-card"><div class="stat-card-val" id="statMinutes">0</div><div class="stat-card-lbl">Minuten trainiert</div><div class="stat-card-sub">geschätzt</div></div>
         </div>
       </div>
@@ -298,7 +317,7 @@ const weeks = [
     ]},
     { name:"Hauptteil", items:[
       { name:"Freistehend halten", desc:"Board ohne Wandstütze ausbalancieren. Notiere deine beste Haltezeit.", time:"3 × 30 Sek.", tip:"Blick fixieren" },
-      { name:"Vor-/Rückwärtskippen", desc:"Gleichmässige, kontrollierte Vor-Rück-Bewegung. Amplitude langsam steigern.", time:"2 × 1 min", tip:"Knie weich" },
+      { name:"Vor-/Rückwärtskippen", desc:"Gleichmässige, kontrollierte Vor-Rück-Bewegung.", time:"2 × 1 min", tip:"Knie weich" },
       { name:"Seitliches Kippen", desc:"Links-rechts in gleichmässigem Rhythmus. Körpermitte angespannt.", time:"2 × 1 min", tip:"Hüfte ruhig" }
     ]},
     { name:"Cool-down", items:[
@@ -335,12 +354,53 @@ const weeks = [
   ]}
 ];
 
+// ── State ──
 let currentWeek=0, currentTab='training';
 let timerSeconds=30, timerRunning=false, timerInterval=null, presetSeconds=30;
-let todayDone={}, allTrainings=[], userId=null, weekChart=null;
+let allTrainings=[], userId=null, weekChart=null;
+
+// selectedDate: offset from today in days (0 = today, -1 = gestern, ...)
+let dateOffset = 0;
 
 function todayStr() { return new Date().toISOString().slice(0,10); }
-function showErr(msg) { const el=document.getElementById('errBanner'); el.textContent=msg; el.classList.toggle('show',!!msg); }
+function offsetToStr(offset) {
+  const d = new Date(); d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0,10);
+}
+function selectedDateStr() { return offsetToStr(dateOffset); }
+
+function formatDateLabel(offset) {
+  if(offset === 0) return 'Heute';
+  if(offset === -1) return 'Gestern';
+  if(offset === -2) return 'Vorgestern';
+  const d = new Date(); d.setDate(d.getDate() + offset);
+  return d.toLocaleDateString('de-CH', {weekday:'long', day:'numeric', month:'long'});
+}
+function formatDateSub(offset) {
+  const d = new Date(); d.setDate(d.getDate() + offset);
+  return d.toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+
+function renderDateBar() {
+  document.getElementById('dateMain').textContent = formatDateLabel(dateOffset);
+  document.getElementById('dateSub').textContent = formatDateSub(dateOffset);
+  document.getElementById('dateNext').disabled = dateOffset >= 0;
+  document.getElementById('dateTodayBtn').classList.toggle('hidden', dateOffset === 0);
+  document.getElementById('datePastNotice').classList.toggle('show', dateOffset < 0);
+}
+
+function changeDate(delta) {
+  const next = dateOffset + delta;
+  if(next > 0) return;
+  dateOffset = next;
+  renderDateBar();
+  renderTraining();
+}
+function goToToday() {
+  dateOffset = 0;
+  renderDateBar();
+  renderTraining();
+}
 
 // ── Auth ──
 let authMode='login';
@@ -354,8 +414,7 @@ function switchAuthTab(mode) {
 async function handleAuth() {
   const email=document.getElementById('authEmail').value.trim();
   const password=document.getElementById('authPassword').value;
-  const btn=document.getElementById('authBtn');
-  const msg=document.getElementById('authMsg');
+  const btn=document.getElementById('authBtn'); const msg=document.getElementById('authMsg');
   if(!email||!password){msg.textContent='Bitte alle Felder ausfüllen.';msg.className='auth-msg err';return;}
   btn.disabled=true; msg.textContent='';
   const res=authMode==='login'
@@ -367,7 +426,7 @@ async function handleAuth() {
 }
 async function handleLogout() {
   await sb.auth.signOut();
-  userId=null;allTrainings=[];todayDone={};
+  userId=null;allTrainings=[];
   document.getElementById('mainApp').style.display='none';
   document.getElementById('authScreen').style.display='flex';
 }
@@ -377,36 +436,41 @@ async function loadTrainings() {
   const {data,error}=await sb.from('trainings').select('*').eq('user_id',userId).order('created_at');
   if(error){console.error('load error',error);return;}
   allTrainings=data||[];
-  todayDone={};
-  const today=todayStr();
-  allTrainings.forEach(r=>{if(r.date===today)todayDone[r.week+'-'+r.section+'-'+r.exercise]=true;});
 }
+
+function doneForDate(dateStr) {
+  const set={};
+  allTrainings.forEach(r=>{if(r.date===dateStr)set[r.week+'-'+r.section+'-'+r.exercise]=true;});
+  return set;
+}
+
+function showErr(msg){const el=document.getElementById('errBanner');el.textContent=msg;el.classList.toggle('show',!!msg);}
 
 async function toggleExercise(wi,si,ei) {
   const ex=weeks[wi].sections[si].items[ei];
   const secName=weeks[wi].sections[si].name;
   const key=wi+'-'+secName+'-'+ex.name;
-  const today=todayStr();
+  const dateStr=selectedDateStr();
+  const doneset=doneForDate(dateStr);
   showErr('');
 
-  if(todayDone[key]) {
+  if(doneset[key]) {
     const {error}=await sb.from('trainings').delete()
-      .eq('user_id',userId).eq('date',today).eq('week',wi).eq('section',secName).eq('exercise',ex.name);
+      .eq('user_id',userId).eq('date',dateStr).eq('week',wi).eq('section',secName).eq('exercise',ex.name);
     if(error){showErr('Fehler: '+error.message);return;}
-    delete todayDone[key];
-    allTrainings=allTrainings.filter(r=>!(r.date===today&&r.week===wi&&r.section===secName&&r.exercise===ex.name));
+    allTrainings=allTrainings.filter(r=>!(r.date===dateStr&&r.week===wi&&r.section===secName&&r.exercise===ex.name));
   } else {
-    const row={user_id:userId,date:today,week:wi,section:secName,exercise:ex.name};
+    const row={user_id:userId,date:dateStr,week:wi,section:secName,exercise:ex.name};
     const {data,error}=await sb.from('trainings').insert(row).select().single();
-    if(error){showErr('Fehler: '+error.message);console.error('insert error',error);return;}
-    if(data){allTrainings.push(data);todayDone[key]=true;}
+    if(error){showErr('Fehler: '+error.message);console.error(error);return;}
+    if(data) allTrainings.push(data);
   }
   renderAll();
 }
 
-function isDone(wi,si,ei){return !!todayDone[wi+'-'+weeks[wi].sections[si].name+'-'+weeks[wi].sections[si].items[ei].name];}
+function isDone(wi,si,ei,doneset){return !!doneset[wi+'-'+weeks[wi].sections[si].name+'-'+weeks[wi].sections[si].items[ei].name];}
 function totalItems(w){return weeks[w].sections.reduce((a,s)=>a+s.items.length,0);}
-function doneCount(w){let c=0;weeks[w].sections.forEach((s,si)=>s.items.forEach((_,ei)=>{if(isDone(w,si,ei))c++;}));return c;}
+function doneCount(w,doneset){let c=0;weeks[w].sections.forEach((s,si)=>s.items.forEach((_,ei)=>{if(isDone(w,si,ei,doneset))c++;}));return c;}
 
 // ── Render training ──
 function renderTabs() {
@@ -422,7 +486,9 @@ function renderTabs() {
 
 function renderTraining() {
   renderTabs();
-  const w=weeks[currentWeek],done=doneCount(currentWeek),total=totalItems(currentWeek);
+  const dateStr=selectedDateStr();
+  const doneset=doneForDate(dateStr);
+  const w=weeks[currentWeek],done=doneCount(currentWeek,doneset),total=totalItems(currentWeek);
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('doneCount').textContent=done;
   document.getElementById('totalCount').textContent=total;
@@ -434,7 +500,7 @@ function renderTraining() {
   w.sections.forEach((sec,si)=>{
     const sh=document.createElement('div');sh.className='section-heading';sh.textContent=sec.name;list.appendChild(sh);
     sec.items.forEach((ex,ei)=>{
-      const d=isDone(currentWeek,si,ei);
+      const d=isDone(currentWeek,si,ei,doneset);
       const card=document.createElement('div');
       card.className='ex-card'+(d?' done':'');
       card.innerHTML=`<div class="ex-num">${d?'✓':(ei+1)}</div><div class="ex-body"><div class="ex-name">${ex.name}</div><div class="ex-desc">${ex.desc}</div><div class="ex-meta"><span class="badge badge-time">⏱ ${ex.time}</span><span class="badge badge-green">${ex.tip}</span></div><div class="check-hint">${d?'Erledigt ✓':'Tippen zum Abhaken'}</div></div>`;
@@ -442,7 +508,7 @@ function renderTraining() {
       list.appendChild(card);
     });
   });
-  document.getElementById('completeBanner').classList.toggle('show',doneCount(currentWeek)===totalItems(currentWeek));
+  document.getElementById('completeBanner').classList.toggle('show',doneCount(currentWeek,doneset)===totalItems(currentWeek));
 }
 
 // ── Render stats ──
@@ -494,9 +560,9 @@ function renderStats() {
   });
 }
 
-function renderAll(){renderTraining();if(currentTab==='stats')renderStats();}
+function renderAll(){renderDateBar();renderTraining();if(currentTab==='stats')renderStats();}
 
-function switchTab(tab) {
+function switchTab(tab){
   currentTab=tab;
   document.getElementById('tabTraining').style.display=tab==='training'?'block':'none';
   document.getElementById('tabStats').style.display=tab==='stats'?'block':'none';
