@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Balance Board Trainer</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0e0f0e;
@@ -18,15 +20,14 @@
     --accent: #b8e04a;
     --accent2: #7db82e;
     --accent-dim: rgba(184,224,74,0.12);
-    --accent-glow: rgba(184,224,74,0.06);
     --warn: #e0a84a;
     --warn-dim: rgba(224,168,74,0.12);
+    --blue: #4a9ee0;
+    --blue-dim: rgba(74,158,224,0.12);
     --radius: 12px;
     --radius-lg: 18px;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -36,529 +37,577 @@
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
-
-  /* Background texture */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(184,224,74,0.05) 0%, transparent 60%);
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(184,224,74,0.05) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
+  .app { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
 
-  .app { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  /* Auth */
+  #authScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1.25rem; position: relative; z-index: 1; }
+  .auth-card { background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 2rem; width: 100%; max-width: 380px; }
+  .auth-logo { font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+  .auth-title { font-size: 22px; font-weight: 300; margin-bottom: 0.3rem; }
+  .auth-title span { font-weight: 500; }
+  .auth-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.75rem; }
+  .auth-tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+  .auth-tab { flex: 1; padding: 7px; border-radius: var(--radius); font-size: 13px; font-family: 'DM Mono', monospace; border: 0.5px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+  .auth-tab.active { background: var(--accent-dim); border-color: rgba(184,224,74,0.3); color: var(--accent); }
+  .field-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+  .field-wrap { margin-bottom: 1rem; }
+  input[type=email], input[type=password] { width: 100%; padding: 10px 14px; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color 0.15s; }
+  input[type=email]:focus, input[type=password]:focus { border-color: rgba(184,224,74,0.4); }
+  .btn-primary { width: 100%; padding: 11px; background: var(--accent); color: #0e0f0e; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+  .btn-primary:hover { background: #c9f055; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .auth-msg { font-size: 13px; margin-top: 0.75rem; text-align: center; min-height: 20px; }
+  .auth-msg.err { color: #e05a5a; }
+  .auth-msg.ok { color: var(--accent); }
+
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 0.5px solid var(--border2); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  .nav-btn { flex: 1; padding: 12px 8px 10px; background: transparent; border: none; color: var(--text3); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: color 0.15s; }
+  .nav-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+  .nav-btn.active { color: var(--accent); }
 
   /* Header */
-  header { margin-bottom: 2.5rem; }
-  .header-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 0.5rem;
-  }
-  h1 { font-size: 28px; font-weight: 300; color: var(--text); line-height: 1.2; }
+  header { margin-bottom: 2rem; }
+  .header-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem; }
+  h1 { font-size: 26px; font-weight: 300; }
   h1 span { font-weight: 500; }
-  .header-sub { font-size: 13px; color: var(--text2); margin-top: 0.4rem; }
+  .header-sub { font-size: 13px; color: var(--text2); margin-top: 0.3rem; }
+  .logout-btn { float: right; margin-top: 4px; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); background: none; border: none; cursor: pointer; letter-spacing: 0.06em; }
+  .logout-btn:hover { color: var(--text2); }
 
-  /* Progress bar */
-  .progress-wrap { margin-bottom: 2rem; }
+  /* Week tabs */
+  .week-tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+  .wtab { flex: 1; padding: 8px 6px; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text2); cursor: pointer; text-align: center; transition: all 0.18s; line-height: 1.4; }
+  .wtab:hover { border-color: var(--border2); color: var(--text); }
+  .wtab.active { background: var(--accent-dim); border-color: rgba(184,224,74,0.3); color: var(--accent); }
+  .wtab-num { display: block; font-size: 14px; font-weight: 500; margin-bottom: 1px; }
+
+  /* Progress */
+  .progress-wrap { margin-bottom: 1.5rem; }
   .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text3); margin-bottom: 6px; font-family: 'DM Mono', monospace; }
   .progress-track { height: 3px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s ease; }
 
-  /* Week tabs */
-  .week-tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
-  .wtab {
-    flex: 1;
-    padding: 8px 10px;
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 12px;
-    font-family: 'DM Mono', monospace;
-    color: var(--text2);
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.18s ease;
-    line-height: 1.4;
-  }
-  .wtab:hover { border-color: var(--border2); color: var(--text); }
-  .wtab.active {
-    background: var(--accent-dim);
-    border-color: rgba(184,224,74,0.3);
-    color: var(--accent);
-  }
-  .wtab-num { display: block; font-size: 15px; font-weight: 500; margin-bottom: 1px; }
+  /* Summary */
+  .summary-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .summary-card { flex: 1; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 0.75rem 1rem; }
+  .summary-val { font-size: 20px; font-weight: 500; font-family: 'DM Mono', monospace; }
+  .summary-val.accent { color: var(--accent); }
+  .summary-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
 
-  /* Week header */
-  .week-header { margin-bottom: 1rem; }
-  .week-title { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
-  .tip-box {
-    background: var(--warn-dim);
-    border: 0.5px solid rgba(224,168,74,0.2);
-    border-radius: var(--radius);
-    padding: 0.65rem 1rem;
-    font-size: 13px;
-    color: var(--warn);
-    line-height: 1.5;
-    margin-bottom: 1.25rem;
-  }
-  .tip-icon { margin-right: 5px; }
+  /* Tip */
+  .tip-box { background: var(--warn-dim); border: 0.5px solid rgba(224,168,74,0.2); border-radius: var(--radius); padding: 0.65rem 1rem; font-size: 13px; color: var(--warn); line-height: 1.5; margin-bottom: 1.25rem; }
 
   /* Timer */
-  .timer-card {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
+  .timer-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
   .timer-left { flex: 1; }
   .timer-lbl { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; }
-  .timer-display { font-family: 'DM Mono', monospace; font-size: 32px; font-weight: 500; color: var(--text); letter-spacing: 0.04em; }
+  .timer-display { font-family: 'DM Mono', monospace; font-size: 32px; font-weight: 500; color: var(--text); }
   .timer-display.running { color: var(--accent); }
-  .timer-display.done { color: var(--accent2); }
   .timer-presets { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
-  .preset-btn {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    padding: 3px 9px;
-    border: 0.5px solid var(--border);
-    border-radius: 99px;
-    background: transparent;
-    color: var(--text3);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
+  .preset-btn { font-family: 'DM Mono', monospace; font-size: 11px; padding: 3px 9px; border: 0.5px solid var(--border); border-radius: 99px; background: transparent; color: var(--text3); cursor: pointer; transition: all 0.15s; }
   .preset-btn:hover { border-color: var(--border2); color: var(--text2); }
   .preset-btn.active { border-color: rgba(184,224,74,0.4); color: var(--accent); background: var(--accent-dim); }
   .timer-btns { display: flex; flex-direction: column; gap: 6px; }
-  .tbtn {
-    padding: 8px 18px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
-    font-family: 'DM Sans', sans-serif;
-  }
+  .tbtn { padding: 8px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
   .tbtn-start { background: var(--accent); color: #0e0f0e; }
   .tbtn-start:hover { background: #c9f055; }
   .tbtn-start.active { background: #e05a5a; color: #fff; }
   .tbtn-reset { background: var(--surface2); color: var(--text2); border: 0.5px solid var(--border); }
-  .tbtn-reset:hover { color: var(--text); border-color: var(--border2); }
 
   /* Section heading */
-  .section-heading {
-    font-size: 10px;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text3);
-    margin: 1.5rem 0 0.6rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .section-heading { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin: 1.5rem 0 0.6rem; display: flex; align-items: center; gap: 8px; }
   .section-heading::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
 
   /* Exercise cards */
-  .ex-card {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 0.9rem 1.1rem;
-    margin-bottom: 8px;
-    display: flex;
-    gap: 12px;
-    cursor: pointer;
-    transition: border-color 0.18s, background 0.18s;
-    position: relative;
-    overflow: hidden;
-  }
+  .ex-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 0.9rem 1.1rem; margin-bottom: 8px; display: flex; gap: 12px; cursor: pointer; transition: border-color 0.18s, background 0.18s; position: relative; overflow: hidden; }
   .ex-card:hover { border-color: var(--border2); background: var(--surface2); }
   .ex-card.done { border-color: rgba(184,224,74,0.2); }
-  .ex-card.done::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--accent);
-    border-radius: 99px 0 0 99px;
-  }
-
-  .ex-num {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: var(--surface2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    color: var(--text3);
-    flex-shrink: 0;
-    margin-top: 2px;
-    transition: all 0.18s;
-  }
+  .ex-card.done::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 99px 0 0 99px; }
+  .ex-num { width: 26px; height: 26px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); flex-shrink: 0; margin-top: 2px; }
   .ex-card.done .ex-num { background: var(--accent-dim); color: var(--accent); }
-
   .ex-body { flex: 1; min-width: 0; }
   .ex-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
   .ex-card.done .ex-name { color: var(--text2); }
   .ex-desc { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 7px; }
   .ex-meta { display: flex; gap: 6px; flex-wrap: wrap; }
-  .badge {
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    padding: 2px 9px;
-    border-radius: 99px;
-    border: 0.5px solid var(--border);
-    color: var(--text3);
-  }
+  .badge { font-size: 11px; font-family: 'DM Mono', monospace; padding: 2px 9px; border-radius: 99px; border: 0.5px solid var(--border); color: var(--text3); }
   .badge-green { background: var(--accent-dim); border-color: rgba(184,224,74,0.2); color: var(--accent2); }
   .badge-time { background: var(--surface2); }
-
   .check-hint { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: 'DM Mono', monospace; }
 
-  /* Progress summary */
-  .summary-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 1.5rem;
-  }
-  .summary-card {
-    flex: 1;
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.75rem 1rem;
-  }
-  .summary-val { font-size: 22px; font-weight: 500; color: var(--text); font-family: 'DM Mono', monospace; }
-  .summary-val.accent { color: var(--accent); }
-  .summary-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
-
-  /* Completion banner */
-  .complete-banner {
-    background: var(--accent-dim);
-    border: 0.5px solid rgba(184,224,74,0.3);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem;
-    text-align: center;
-    margin-top: 1.5rem;
-    display: none;
-  }
+  /* Complete banner */
+  .complete-banner { background: var(--accent-dim); border: 0.5px solid rgba(184,224,74,0.3); border-radius: var(--radius-lg); padding: 1.25rem; text-align: center; margin-top: 1.5rem; display: none; }
   .complete-banner.show { display: block; }
   .complete-banner h3 { font-size: 16px; color: var(--accent); margin-bottom: 4px; }
   .complete-banner p { font-size: 13px; color: var(--text2); }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+  /* Stats */
+  .stats-section { margin-bottom: 2rem; }
+  .stats-title { font-size: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 8px; }
+  .stats-title::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+  .stat-cards { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.1rem; }
+  .stat-card-val { font-size: 28px; font-weight: 500; font-family: 'DM Mono', monospace; line-height: 1; margin-bottom: 4px; }
+  .stat-card-val.green { color: var(--accent); }
+  .stat-card-val.blue { color: var(--blue); }
+  .stat-card-val.warn { color: var(--warn); }
+  .stat-card-lbl { font-size: 12px; color: var(--text2); }
+  .stat-card-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .streak-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+  .streak-dot { width: 28px; height: 28px; border-radius: 6px; background: var(--surface2); border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 9px; font-family: 'DM Mono', monospace; color: var(--text3); }
+  .streak-dot.active { background: var(--accent-dim); border-color: rgba(184,224,74,0.3); color: var(--accent); }
+  .streak-dot.today { outline: 1px solid rgba(184,224,74,0.5); }
+  .chart-wrap { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.1rem; }
+  .chart-wrap canvas { max-height: 200px; }
+  .week-progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .wpr-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); width: 60px; flex-shrink: 0; }
+  .wpr-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+  .wpr-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s ease; }
+  .wpr-pct { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text2); width: 34px; text-align: right; flex-shrink: 0; }
+  .no-data { font-size: 13px; color: var(--text3); text-align: center; padding: 2rem 0; font-family: 'DM Mono', monospace; }
+
+  /* Loading */
+  .loading-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .loading-txt { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text3); letter-spacing: 0.08em; }
 
   @media (max-width: 480px) {
-    .app { padding: 1.25rem 1rem 3rem; }
+    .app { padding: 1.25rem 1rem 5rem; }
     h1 { font-size: 22px; }
     .timer-display { font-size: 26px; }
-    .summary-val { font-size: 18px; }
+    .stat-card-val { font-size: 22px; }
   }
 </style>
 </head>
 <body>
-<div class="app">
 
-  <header>
-    <div class="header-label">Idiana Balance Board</div>
-    <h1>Dein <span>Trainingsplan</span></h1>
-    <div class="header-sub">6 Wochen · ~15 Minuten täglich · Anfänger</div>
-  </header>
+<div class="loading-overlay" id="loadingOverlay"><div class="loading-txt">Laden...</div></div>
 
-  <div class="progress-wrap">
-    <div class="progress-label">
-      <span id="progressLabel">Woche 1–2 · Aufbau</span>
-      <span id="progressPct">0 %</span>
+<!-- Auth -->
+<div id="authScreen" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-logo">Balance Board Trainer</div>
+    <h1 class="auth-title">Guten <span>Morgen</span></h1>
+    <p class="auth-sub">Melde dich an um dein Training zu verfolgen.</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Anmelden</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Registrieren</button>
     </div>
-    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="field-wrap">
+      <div class="field-label">E-Mail</div>
+      <input type="email" id="authEmail" placeholder="name@beispiel.ch" />
+    </div>
+    <div class="field-wrap">
+      <div class="field-label">Passwort</div>
+      <input type="password" id="authPassword" placeholder="Mindestens 6 Zeichen" />
+    </div>
+    <button class="btn-primary" id="authBtn" onclick="handleAuth()">Anmelden</button>
+    <div class="auth-msg" id="authMsg"></div>
   </div>
+</div>
 
-  <div class="week-tabs" id="weekTabs"></div>
+<!-- Main App -->
+<div id="mainApp" style="display:none;">
+  <div class="app">
+    <header>
+      <button class="logout-btn" onclick="handleLogout()">Abmelden</button>
+      <div class="header-label">Idiana Balance Board</div>
+      <h1>Dein <span>Trainingsplan</span></h1>
+      <div class="header-sub">6 Wochen · ~15 Minuten täglich · Anfänger</div>
+    </header>
 
-  <div class="summary-bar">
-    <div class="summary-card">
-      <div class="summary-val accent" id="doneCount">0</div>
-      <div class="summary-lbl">Erledigt heute</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-val" id="totalCount">0</div>
-      <div class="summary-lbl">Übungen total</div>
-    </div>
-    <div class="summary-card">
-      <div class="summary-val" id="totalMin">15</div>
-      <div class="summary-lbl">Minuten</div>
-    </div>
-  </div>
-
-  <div class="week-header">
-    <div class="week-title" id="weekTitle"></div>
-    <div class="tip-box" id="tipBox"></div>
-  </div>
-
-  <div class="timer-card">
-    <div class="timer-left">
-      <div class="timer-lbl">Übungs-Timer</div>
-      <div class="timer-display" id="timerDisplay">00:30</div>
-      <div class="timer-presets">
-        <button class="preset-btn active" onclick="setPreset(30, this)">30s</button>
-        <button class="preset-btn" onclick="setPreset(60, this)">1 min</button>
-        <button class="preset-btn" onclick="setPreset(120, this)">2 min</button>
-        <button class="preset-btn" onclick="setPreset(180, this)">3 min</button>
+    <!-- Training tab -->
+    <div id="tabTraining">
+      <div class="week-tabs" id="weekTabs"></div>
+      <div class="summary-bar">
+        <div class="summary-card"><div class="summary-val accent" id="doneCount">0</div><div class="summary-lbl">Erledigt heute</div></div>
+        <div class="summary-card"><div class="summary-val" id="totalCount">0</div><div class="summary-lbl">Übungen total</div></div>
+        <div class="summary-card"><div class="summary-val">15</div><div class="summary-lbl">Minuten</div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label"><span id="progressLabel"></span><span id="progressPct">0 %</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+      <div class="tip-box" id="tipBox"></div>
+      <div class="timer-card">
+        <div class="timer-left">
+          <div class="timer-lbl">Übungs-Timer</div>
+          <div class="timer-display" id="timerDisplay">00:30</div>
+          <div class="timer-presets">
+            <button class="preset-btn active" onclick="setPreset(30,this)">30s</button>
+            <button class="preset-btn" onclick="setPreset(60,this)">1 min</button>
+            <button class="preset-btn" onclick="setPreset(120,this)">2 min</button>
+            <button class="preset-btn" onclick="setPreset(180,this)">3 min</button>
+          </div>
+        </div>
+        <div class="timer-btns">
+          <button class="tbtn tbtn-start" id="timerStart" onclick="toggleTimer()">Start</button>
+          <button class="tbtn tbtn-reset" onclick="resetTimer()">Reset</button>
+        </div>
+      </div>
+      <div id="exerciseList"></div>
+      <div class="complete-banner" id="completeBanner">
+        <h3>Einheit abgeschlossen!</h3>
+        <p>Alle Übungen für heute erledigt. Morgen weitermachen!</p>
       </div>
     </div>
-    <div class="timer-btns">
-      <button class="tbtn tbtn-start" id="timerStart" onclick="toggleTimer()">Start</button>
-      <button class="tbtn tbtn-reset" onclick="resetTimer()">Reset</button>
+
+    <!-- Stats tab -->
+    <div id="tabStats" style="display:none;">
+      <div class="stats-section">
+        <div class="stats-title">Übersicht</div>
+        <div class="stat-cards">
+          <div class="stat-card">
+            <div class="stat-card-val green" id="statStreak">0</div>
+            <div class="stat-card-lbl">Tage in Folge</div>
+            <div class="stat-card-sub" id="statStreakSub"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-val blue" id="statTotalDays">0</div>
+            <div class="stat-card-lbl">Trainingstage total</div>
+            <div class="stat-card-sub">von 42 möglich</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-val warn" id="statExercises">0</div>
+            <div class="stat-card-lbl">Übungen absolviert</div>
+            <div class="stat-card-sub"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-val" id="statMinutes">0</div>
+            <div class="stat-card-lbl">Minuten trainiert</div>
+            <div class="stat-card-sub">geschätzt</div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-title">Letzte 21 Tage</div>
+        <div class="streak-grid" id="streakGrid"></div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-title">Übungen pro Woche</div>
+        <div class="chart-wrap"><canvas id="weekChart"></canvas></div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-title">Fortschritt pro Phase</div>
+        <div id="weekProgressBars"></div>
+      </div>
     </div>
   </div>
 
-  <div id="exerciseList"></div>
-
-  <div class="complete-banner" id="completeBanner">
-    <h3>🎉 Einheit abgeschlossen!</h3>
-    <p>Alle Übungen für heute erledigt. Morgen weitermachen!</p>
-  </div>
-
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="navTraining" onclick="switchTab('training')">
+      <svg viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      <span>Training</span>
+    </button>
+    <button class="nav-btn" id="navStats" onclick="switchTab('stats')">
+      <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <span>Statistik</span>
+    </button>
+  </nav>
 </div>
 
 <script>
+const SUPABASE_URL = 'https://dejogzziiqjigjusjcrh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_8AZRGe40UJNbsXLxsqEGyA_Uic43D_H';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const weeks = [
   {
-    label: "Woche 1–2",
-    title: "Gleichgewicht aufbauen",
-    tip: "Stelle das Board nahe einer Wand auf. Barfuss üben gibt besseres Feedback. Noch keine grossen Kippbewegungen.",
-    sections: [
-      { name: "Aufwärmen", items: [
-        { name: "Standübung mit Support", desc: "Auf das Board stellen, Wand halten. Gleichgewichtspunkt finden – noch keine Kippbewegung.", time: "2 min", tip: "Ruhig atmen" },
-        { name: "Gewichtsverlagerung seitlich", desc: "Langsam von links nach rechts verlagern, Board leicht neigen. Nicht bis zum Anschlag kippen.", time: "2 min", tip: "Kontrolliert" }
+    label:"Wo. 1–2", title:"Gleichgewicht aufbauen",
+    tip:"Stelle das Board nahe einer Wand auf. Barfuss üben gibt besseres Feedback. Noch keine grossen Kippbewegungen.",
+    sections:[
+      {name:"Aufwärmen",items:[
+        {name:"Standübung mit Support",desc:"Auf das Board stellen, Wand halten. Gleichgewichtspunkt finden – noch keine Kippbewegung.",time:"2 min",tip:"Ruhig atmen"},
+        {name:"Gewichtsverlagerung seitlich",desc:"Langsam von links nach rechts verlagern, Board leicht neigen. Nicht bis zum Anschlag.",time:"2 min",tip:"Kontrolliert"}
       ]},
-      { name: "Hauptteil", items: [
-        { name: "Freistehend halten", desc: "Board ohne Wandstütze ausbalancieren. Notiere deine beste Haltezeit.", time: "3 × 30 Sek.", tip: "Blick fixieren" },
-        { name: "Vor-/Rückwärtskippen", desc: "Gleichmässige, kontrollierte Vor-Rück-Bewegung. Amplitude langsam steigern.", time: "2 × 1 min", tip: "Knie weich" },
-        { name: "Seitliches Kippen", desc: "Links-rechts in gleichmässigem Rhythmus. Körpermitte angespannt halten.", time: "2 × 1 min", tip: "Hüfte ruhig" }
+      {name:"Hauptteil",items:[
+        {name:"Freistehend halten",desc:"Board ohne Wandstütze ausbalancieren. Notiere deine beste Haltezeit.",time:"3 × 30 Sek.",tip:"Blick fixieren"},
+        {name:"Vor-/Rückwärtskippen",desc:"Gleichmässige, kontrollierte Vor-Rück-Bewegung. Amplitude langsam steigern.",time:"2 × 1 min",tip:"Knie weich"},
+        {name:"Seitliches Kippen",desc:"Links-rechts in gleichmässigem Rhythmus. Körpermitte angespannt halten.",time:"2 × 1 min",tip:"Hüfte ruhig"}
       ]},
-      { name: "Cool-down", items: [
-        { name: "Sanftes Balancieren", desc: "Entspannt stehen, leichte Ausgleichsbewegungen zulassen. Augen schliessen als Bonus.", time: "2 min", tip: "Locker lassen" }
+      {name:"Cool-down",items:[
+        {name:"Sanftes Balancieren",desc:"Entspannt stehen, leichte Ausgleichsbewegungen zulassen. Augen schliessen als Bonus.",time:"2 min",tip:"Locker lassen"}
       ]}
     ]
   },
   {
-    label: "Woche 3–4",
-    title: "Stabilität & Kontrolle",
-    tip: "Wandunterstützung weglassen. Konzentriere dich auf saubere, gezielte Bewegungen – Qualität vor Dauer.",
-    sections: [
-      { name: "Aufwärmen", items: [
-        { name: "Aufwärmbalance", desc: "Frei auf dem Board stehen, alle Richtungen leicht antasten. Board nie bis zum Anschlag kippen.", time: "2 min", tip: "Einschwingen" }
+    label:"Wo. 3–4", title:"Stabilität & Kontrolle",
+    tip:"Wandunterstützung weglassen. Konzentriere dich auf saubere Bewegungen – Qualität vor Dauer.",
+    sections:[
+      {name:"Aufwärmen",items:[
+        {name:"Aufwärmbalance",desc:"Frei auf dem Board stehen, alle Richtungen leicht antasten.",time:"2 min",tip:"Einschwingen"}
       ]},
-      { name: "Hauptteil", items: [
-        { name: "Gezielte Kreisbewegung", desc: "Board kreisförmig führen – vorne über rechts nach hinten und links. Beide Richtungen üben.", time: "3 × 1 min", tip: "Ruhig und rund" },
-        { name: "Arm-Variationen", desc: "Arme in verschiedene Positionen bringen während du balancierst: ausgestreckt, über Kopf, vor der Brust.", time: "2 × 1 min", tip: "Kern anspannen" },
-        { name: "Haltezeiten steigern", desc: "Board waagerecht halten ohne Bodenkontakt. Ziel: 60 Sekunden am Stück.", time: "4 × max", tip: "Zählen hilft" },
-        { name: "Kniebeugen auf dem Board", desc: "Leichte Kniebeugen (10–15 cm) während du balancierst. Sehr langsam ausführen.", time: "2 × 5 Wdh.", tip: "Keine Eile" }
+      {name:"Hauptteil",items:[
+        {name:"Gezielte Kreisbewegung",desc:"Board kreisförmig führen – vorne über rechts nach hinten und links. Beide Richtungen.",time:"3 × 1 min",tip:"Ruhig und rund"},
+        {name:"Arm-Variationen",desc:"Arme in verschiedene Positionen bringen während du balancierst: ausgestreckt, über Kopf, vor Brust.",time:"2 × 1 min",tip:"Kern anspannen"},
+        {name:"Haltezeiten steigern",desc:"Board waagerecht halten ohne Bodenkontakt. Ziel: 60 Sekunden am Stück.",time:"4 × max",tip:"Zählen hilft"},
+        {name:"Kniebeugen auf dem Board",desc:"Leichte Kniebeugen (10–15 cm) während du balancierst. Sehr langsam ausführen.",time:"2 × 5 Wdh.",tip:"Keine Eile"}
       ]},
-      { name: "Cool-down", items: [
-        { name: "Entspannungsstand", desc: "Augen geschlossen auf dem Board stehen. Auf die Körperwahrnehmung konzentrieren.", time: "2 min", tip: "Tief atmen" }
+      {name:"Cool-down",items:[
+        {name:"Entspannungsstand",desc:"Augen geschlossen auf dem Board stehen. Auf die Körperwahrnehmung konzentrieren.",time:"2 min",tip:"Tief atmen"}
       ]}
     ]
   },
   {
-    label: "Woche 5–6",
-    title: "Ausdauer & Herausforderung",
-    tip: "Du spürst jetzt echte Fortschritte! Übungen kombinieren und kontrolliert an Grenzen herantasten.",
-    sections: [
-      { name: "Aufwärmen", items: [
-        { name: "Dynamischer Einstieg", desc: "Seitlich auf das Board aufsteigen und sofort balancieren. Sprunggelenke vorher kreisen.", time: "1 min", tip: "Sprunggelenke warm" }
+    label:"Wo. 5–6", title:"Ausdauer & Herausforderung",
+    tip:"Du spürst jetzt echte Fortschritte! Übungen kombinieren und kontrolliert an Grenzen herantasten.",
+    sections:[
+      {name:"Aufwärmen",items:[
+        {name:"Dynamischer Einstieg",desc:"Seitlich aufsteigen und sofort balancieren. Sprunggelenke vorher kreisen.",time:"1 min",tip:"Warm werden"}
       ]},
-      { name: "Hauptteil", items: [
-        { name: "Einbeiniges Balancieren", desc: "Auf einem Bein auf dem Board stehen. Das andere Bein leicht angehoben. Alle 20 Sek. wechseln.", time: "3 × 20 Sek.", tip: "Fuss locker" },
-        { name: "Ball fangen/werfen", desc: "Leichten Ball gegen die Wand werfen und fangen – während du auf dem Board balancierst.", time: "3 × 1 min", tip: "Kleiner Ball" },
-        { name: "Augen-zu-Balance", desc: "Mit geschlossenen Augen balancieren. Das vestibuläre System wird viel stärker beansprucht.", time: "3 × 30 Sek.", tip: "Sicher stehen" },
-        { name: "Kombinations-Flow", desc: "Kreisbewegung + leichte Kniebeuge + Arm-Overhead: alle drei kombiniert durchführen.", time: "2 × 2 min", tip: "Fliessen lassen" }
+      {name:"Hauptteil",items:[
+        {name:"Einbeiniges Balancieren",desc:"Auf einem Bein stehen. Das andere leicht angehoben. Alle 20 Sek. wechseln.",time:"3 × 20 Sek.",tip:"Fuss locker"},
+        {name:"Ball fangen/werfen",desc:"Leichten Ball gegen die Wand werfen und fangen – auf dem Board.",time:"3 × 1 min",tip:"Kleiner Ball"},
+        {name:"Augen-zu-Balance",desc:"Mit geschlossenen Augen balancieren. Vestibuläres System wird stärker beansprucht.",time:"3 × 30 Sek.",tip:"Sicher stehen"},
+        {name:"Kombinations-Flow",desc:"Kreisbewegung + Kniebeuge + Arm-Overhead: alle drei kombiniert durchführen.",time:"2 × 2 min",tip:"Fliessen lassen"}
       ]},
-      { name: "Cool-down", items: [
-        { name: "Cool-down Balance", desc: "Langsames, bewusstes Balancieren – Bewegungen verlangsamen, Körper beruhigen.", time: "2 min", tip: "Abschalten" }
+      {name:"Cool-down",items:[
+        {name:"Cool-down Balance",desc:"Langsames, bewusstes Balancieren – Bewegungen verlangsamen, Körper beruhigen.",time:"2 min",tip:"Abschalten"}
       ]}
     ]
   }
 ];
 
-// State
-let currentWeek = 0;
-let timerSeconds = 30;
-let timerRunning = false;
-let timerInterval = null;
-let presetSeconds = 30;
-// done[week][sectionIdx][itemIdx] = bool
-let done = weeks.map(w => w.sections.map(s => s.items.map(() => false)));
+let currentWeek = 0, currentTab = 'training';
+let timerSeconds = 30, timerRunning = false, timerInterval = null, presetSeconds = 30;
+let todayDone = {}, allTrainings = [], userId = null, weekChart = null;
 
-function saveDone() {
-  try { localStorage.setItem('bb_done', JSON.stringify(done)); } catch(e){}
-}
-function loadDone() {
-  try {
-    const s = localStorage.getItem('bb_done');
-    if (s) done = JSON.parse(s);
-  } catch(e){}
-}
-loadDone();
+function todayStr() { return new Date().toISOString().slice(0,10); }
 
-function totalItems(w) {
-  return weeks[w].sections.reduce((a, s) => a + s.items.length, 0);
+// ── Auth ──
+let authMode = 'login';
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.getElementById('tabLogin').classList.toggle('active', mode==='login');
+  document.getElementById('tabRegister').classList.toggle('active', mode==='register');
+  document.getElementById('authBtn').textContent = mode==='login' ? 'Anmelden' : 'Registrieren';
+  document.getElementById('authMsg').textContent = '';
 }
-function doneItems(w) {
-  return done[w].reduce((a, s) => a + s.filter(Boolean).length, 0);
+async function handleAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const btn = document.getElementById('authBtn');
+  const msg = document.getElementById('authMsg');
+  if (!email || !password) { msg.textContent='Bitte alle Felder ausfüllen.'; msg.className='auth-msg err'; return; }
+  btn.disabled = true; msg.textContent = '';
+  const res = authMode==='login'
+    ? await sb.auth.signInWithPassword({email,password})
+    : await sb.auth.signUp({email,password});
+  btn.disabled = false;
+  if (res.error) { msg.textContent=res.error.message; msg.className='auth-msg err'; }
+  else if (authMode==='register' && !res.data.session) { msg.textContent='Bestätigungs-E-Mail gesendet.'; msg.className='auth-msg ok'; }
+}
+async function handleLogout() {
+  await sb.auth.signOut();
+  userId=null; allTrainings=[]; todayDone={};
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('authScreen').style.display='flex';
 }
 
+// ── Data ──
+async function loadTrainings() {
+  const {data} = await sb.from('trainings').select('*').eq('user_id',userId).order('created_at');
+  allTrainings = data||[];
+  todayDone = {};
+  const today = todayStr();
+  allTrainings.forEach(r => { if(r.date===today) todayDone[r.week+'-'+r.section+'-'+r.exercise]=true; });
+}
+
+async function toggleExercise(wi,si,ei) {
+  const ex = weeks[wi].sections[si].items[ei];
+  const key = wi+'-'+weeks[wi].sections[si].name+'-'+ex.name;
+  const today = todayStr();
+  if (todayDone[key]) {
+    await sb.from('trainings').delete().eq('user_id',userId).eq('date',today).eq('week',wi).eq('section',weeks[wi].sections[si].name).eq('exercise',ex.name);
+    delete todayDone[key];
+    allTrainings = allTrainings.filter(r=>!(r.date===today&&r.week===wi&&r.section===weeks[wi].sections[si].name&&r.exercise===ex.name));
+  } else {
+    const row={user_id:userId,date:today,week:wi,section:weeks[wi].sections[si].name,exercise:ex.name};
+    const {data} = await sb.from('trainings').insert(row).select().single();
+    if(data){allTrainings.push(data);todayDone[key]=true;}
+  }
+  renderAll();
+}
+
+function isDone(wi,si,ei) { return !!todayDone[wi+'-'+weeks[wi].sections[si].name+'-'+weeks[wi].sections[si].items[ei].name]; }
+function totalItems(w) { return weeks[w].sections.reduce((a,s)=>a+s.items.length,0); }
+function doneCount(w) { let c=0; weeks[w].sections.forEach((s,si)=>s.items.forEach((_,ei)=>{if(isDone(w,si,ei))c++;})); return c; }
+
+// ── Render training ──
 function renderTabs() {
-  const el = document.getElementById('weekTabs');
-  el.innerHTML = '';
-  weeks.forEach((w, i) => {
-    const d = doneItems(i), t = totalItems(i);
-    const pct = t ? Math.round(d/t*100) : 0;
-    const btn = document.createElement('button');
-    btn.className = 'wtab' + (i === currentWeek ? ' active' : '');
-    btn.innerHTML = `<span class="wtab-num">${w.label}</span>${pct > 0 ? pct+'%' : w.title.split(' ')[0]}`;
-    btn.onclick = () => { currentWeek = i; renderAll(); };
+  const el = document.getElementById('weekTabs'); el.innerHTML='';
+  weeks.forEach((w,i)=>{
+    const btn=document.createElement('button');
+    btn.className='wtab'+(i===currentWeek?' active':'');
+    btn.innerHTML=`<span class="wtab-num">${w.label}</span>${w.title.split(' ')[0]}`;
+    btn.onclick=()=>{currentWeek=i;renderTraining();};
     el.appendChild(btn);
   });
 }
 
-function renderProgress() {
-  const w = weeks[currentWeek];
-  const d = doneItems(currentWeek), t = totalItems(currentWeek);
-  const pct = t ? Math.round(d/t*100) : 0;
-  document.getElementById('progressLabel').textContent = w.label + ' · ' + w.title;
-  document.getElementById('progressPct').textContent = pct + ' %';
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('doneCount').textContent = d;
-  document.getElementById('totalCount').textContent = t;
-}
-
-function renderExercises() {
-  const w = weeks[currentWeek];
-  document.getElementById('weekTitle').textContent = w.title;
-  document.getElementById('tipBox').innerHTML = '<span class="tip-icon">💡</span>' + w.tip;
-  const list = document.getElementById('exerciseList');
-  list.innerHTML = '';
-
-  w.sections.forEach((sec, si) => {
-    const sh = document.createElement('div');
-    sh.className = 'section-heading';
-    sh.textContent = sec.name;
-    list.appendChild(sh);
-
-    sec.items.forEach((ex, ei) => {
-      const isDone = done[currentWeek][si][ei];
-      const card = document.createElement('div');
-      card.className = 'ex-card' + (isDone ? ' done' : '');
-      card.innerHTML = `
-        <div class="ex-num">${isDone ? '✓' : (ei+1)}</div>
-        <div class="ex-body">
-          <div class="ex-name">${ex.name}</div>
-          <div class="ex-desc">${ex.desc}</div>
-          <div class="ex-meta">
-            <span class="badge badge-time">⏱ ${ex.time}</span>
-            <span class="badge badge-green">${ex.tip}</span>
-          </div>
-          <div class="check-hint">${isDone ? 'Erledigt ✓' : 'Tippen zum Abhaken'}</div>
-        </div>`;
-      card.onclick = () => {
-        done[currentWeek][si][ei] = !done[currentWeek][si][ei];
-        saveDone();
-        renderAll();
-      };
+function renderTraining() {
+  renderTabs();
+  const w=weeks[currentWeek], done=doneCount(currentWeek), total=totalItems(currentWeek);
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('doneCount').textContent=done;
+  document.getElementById('totalCount').textContent=total;
+  document.getElementById('progressLabel').textContent=w.label+' · '+w.title;
+  document.getElementById('progressPct').textContent=pct+' %';
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('tipBox').innerHTML='💡 '+w.tip;
+  const list=document.getElementById('exerciseList'); list.innerHTML='';
+  w.sections.forEach((sec,si)=>{
+    const sh=document.createElement('div'); sh.className='section-heading'; sh.textContent=sec.name; list.appendChild(sh);
+    sec.items.forEach((ex,ei)=>{
+      const d=isDone(currentWeek,si,ei);
+      const card=document.createElement('div');
+      card.className='ex-card'+(d?' done':'');
+      card.innerHTML=`<div class="ex-num">${d?'✓':(ei+1)}</div><div class="ex-body"><div class="ex-name">${ex.name}</div><div class="ex-desc">${ex.desc}</div><div class="ex-meta"><span class="badge badge-time">⏱ ${ex.time}</span><span class="badge badge-green">${ex.tip}</span></div><div class="check-hint">${d?'Erledigt ✓':'Tippen zum Abhaken'}</div></div>`;
+      card.onclick=()=>toggleExercise(currentWeek,si,ei);
       list.appendChild(card);
     });
   });
-
-  // Completion banner
-  const allDone = doneItems(currentWeek) === totalItems(currentWeek);
-  document.getElementById('completeBanner').classList.toggle('show', allDone);
+  document.getElementById('completeBanner').classList.toggle('show', doneCount(currentWeek)===totalItems(currentWeek));
 }
 
-function renderAll() {
-  renderTabs();
-  renderProgress();
-  renderExercises();
-}
+// ── Render stats ──
+function renderStats() {
+  const days=[...new Set(allTrainings.map(r=>r.date))].sort();
+  const totalDays=days.length, totalEx=allTrainings.length, totalMin=totalDays*15;
+  let streak=0; const today=todayStr(); const daySet=new Set(days);
+  let check=new Date(today+'T12:00:00');
+  while(true){const s=check.toISOString().slice(0,10);if(daySet.has(s)){streak++;check.setDate(check.getDate()-1);}else break;}
+  document.getElementById('statStreak').textContent=streak;
+  document.getElementById('statStreakSub').textContent=streak>1?streak+' Tage am Stück':'';
+  document.getElementById('statTotalDays').textContent=totalDays;
+  document.getElementById('statExercises').textContent=totalEx;
+  document.getElementById('statMinutes').textContent=totalMin;
 
-// Timer
-function updateDisplay() {
-  const m = Math.floor(timerSeconds / 60).toString().padStart(2,'0');
-  const s = (timerSeconds % 60).toString().padStart(2,'0');
-  const el = document.getElementById('timerDisplay');
-  el.textContent = m + ':' + s;
-  el.className = 'timer-display' + (timerRunning ? ' running' : timerSeconds === 0 ? ' done' : '');
-}
-
-function toggleTimer() {
-  const btn = document.getElementById('timerStart');
-  if (timerRunning) {
-    clearInterval(timerInterval);
-    timerRunning = false;
-    btn.textContent = 'Start';
-    btn.classList.remove('active');
-  } else {
-    if (timerSeconds === 0) timerSeconds = presetSeconds;
-    timerRunning = true;
-    btn.textContent = 'Stopp';
-    btn.classList.add('active');
-    timerInterval = setInterval(() => {
-      if (timerSeconds > 0) {
-        timerSeconds--;
-        updateDisplay();
-      } else {
-        clearInterval(timerInterval);
-        timerRunning = false;
-        btn.textContent = 'Start';
-        btn.classList.remove('active');
-      }
-    }, 1000);
+  // Streak grid – last 21 days
+  const el=document.getElementById('streakGrid'); el.innerHTML='';
+  for(let i=20;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    const dot=document.createElement('div');
+    dot.className='streak-dot'+(daySet.has(ds)?' active':'')+(ds===today?' today':'');
+    dot.textContent=d.getDate(); dot.title=ds; el.appendChild(dot);
   }
-  updateDisplay();
+
+  // Chart – exercises per calendar week
+  const byWeek={};
+  allTrainings.forEach(r=>{
+    const d=new Date(r.date+'T12:00:00');
+    const jan1=new Date(d.getFullYear(),0,1);
+    const cw=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+    const key='KW'+cw; byWeek[key]=(byWeek[key]||0)+1;
+  });
+  const ctx=document.getElementById('weekChart').getContext('2d');
+  if(weekChart){weekChart.destroy();weekChart=null;}
+  const labels=Object.keys(byWeek).slice(-8);
+  if(labels.length){
+    weekChart=new Chart(ctx,{
+      type:'bar',
+      data:{labels,datasets:[{data:labels.map(k=>byWeek[k]),backgroundColor:'rgba(184,224,74,0.2)',borderColor:'rgba(184,224,74,0.7)',borderWidth:1,borderRadius:4}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{
+        x:{ticks:{color:'#5a5856',font:{family:'DM Mono',size:11}},grid:{color:'rgba(255,255,255,0.04)'}},
+        y:{ticks:{color:'#5a5856',font:{family:'DM Mono',size:11},stepSize:1},grid:{color:'rgba(255,255,255,0.04)'},beginAtZero:true}
+      }}
+    });
+  } else {
+    ctx.canvas.parentElement.innerHTML='<div class="no-data">Noch keine Trainingsdaten</div>';
+  }
+
+  // Phase progress bars
+  const byPhase={0:new Set(),1:new Set(),2:new Set()};
+  allTrainings.forEach(r=>{if(byPhase[r.week]!==undefined)byPhase[r.week].add(r.exercise);});
+  const bars=document.getElementById('weekProgressBars'); bars.innerHTML='';
+  weeks.forEach((w,i)=>{
+    const total=w.sections.reduce((a,s)=>a+s.items.length,0);
+    const done=byPhase[i]?byPhase[i].size:0;
+    const pct=total?Math.min(100,Math.round(done/total*100)):0;
+    bars.innerHTML+=`<div class="week-progress-row"><div class="wpr-label">${w.label}</div><div class="wpr-track"><div class="wpr-fill" style="width:${pct}%"></div></div><div class="wpr-pct">${pct} %</div></div>`;
+  });
 }
 
+function renderAll() { renderTraining(); if(currentTab==='stats') renderStats(); }
+
+// ── Tab ──
+function switchTab(tab) {
+  currentTab=tab;
+  document.getElementById('tabTraining').style.display=tab==='training'?'block':'none';
+  document.getElementById('tabStats').style.display=tab==='stats'?'block':'none';
+  document.getElementById('navTraining').classList.toggle('active',tab==='training');
+  document.getElementById('navStats').classList.toggle('active',tab==='stats');
+  if(tab==='stats') renderStats();
+}
+
+// ── Timer ──
+function updateTimerDisplay() {
+  const m=Math.floor(timerSeconds/60).toString().padStart(2,'0');
+  const s=(timerSeconds%60).toString().padStart(2,'0');
+  const el=document.getElementById('timerDisplay');
+  el.textContent=m+':'+s; el.className='timer-display'+(timerRunning?' running':'');
+}
+function toggleTimer() {
+  const btn=document.getElementById('timerStart');
+  if(timerRunning){clearInterval(timerInterval);timerRunning=false;btn.textContent='Start';btn.classList.remove('active');}
+  else{
+    if(timerSeconds===0)timerSeconds=presetSeconds;
+    timerRunning=true;btn.textContent='Stopp';btn.classList.add('active');
+    timerInterval=setInterval(()=>{
+      if(timerSeconds>0){timerSeconds--;updateTimerDisplay();}
+      else{clearInterval(timerInterval);timerRunning=false;btn.textContent='Start';btn.classList.remove('active');}
+    },1000);
+  }
+  updateTimerDisplay();
+}
 function resetTimer() {
-  clearInterval(timerInterval);
-  timerRunning = false;
-  timerSeconds = presetSeconds;
-  const btn = document.getElementById('timerStart');
-  btn.textContent = 'Start';
-  btn.classList.remove('active');
-  updateDisplay();
-}
-
-function setPreset(secs, el) {
-  presetSeconds = secs;
-  timerSeconds = secs;
-  clearInterval(timerInterval);
-  timerRunning = false;
-  document.getElementById('timerStart').textContent = 'Start';
+  clearInterval(timerInterval);timerRunning=false;timerSeconds=presetSeconds;
+  document.getElementById('timerStart').textContent='Start';
   document.getElementById('timerStart').classList.remove('active');
-  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  updateDisplay();
+  updateTimerDisplay();
+}
+function setPreset(secs,el) {
+  presetSeconds=secs;timerSeconds=secs;clearInterval(timerInterval);timerRunning=false;
+  document.getElementById('timerStart').textContent='Start';
+  document.getElementById('timerStart').classList.remove('active');
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');updateTimerDisplay();
 }
 
-renderAll();
-updateDisplay();
+// ── Init ──
+async function init() {
+  const {data:{session}} = await sb.auth.getSession();
+  document.getElementById('loadingOverlay').style.display='none';
+  if(session){
+    userId=session.user.id;
+    await loadTrainings();
+    document.getElementById('mainApp').style.display='block';
+    renderAll();
+  } else {
+    document.getElementById('authScreen').style.display='flex';
+  }
+  sb.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='SIGNED_IN'&&session){
+      userId=session.user.id;
+      document.getElementById('authScreen').style.display='none';
+      await loadTrainings();
+      document.getElementById('mainApp').style.display='block';
+      renderAll();
+    }
+  });
+}
+
+updateTimerDisplay();
+init();
 </script>
 </body>
 </html>
