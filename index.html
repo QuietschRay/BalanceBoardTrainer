@@ -65,7 +65,7 @@
   .date-center{flex:1;text-align:center;}
   .date-main{font-size:14px;font-weight:500;color:var(--text);font-family:'DM Mono',monospace;}
   .date-sub{font-size:11px;color:var(--text3);margin-top:1px;}
-  .date-today-btn{font-size:11px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:99px;border:0.5px solid rgba(184,224,74,0.3);background:var(--accent-dim);color:var(--accent);cursor:pointer;flex-shrink:0;transition:all .15s;}
+  .date-today-btn{font-size:11px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:99px;border:0.5px solid rgba(184,224,74,0.3);background:var(--accent-dim);color:var(--accent);cursor:pointer;flex-shrink:0;}
   .date-today-btn.hidden{visibility:hidden;}
   .date-past-notice{font-size:12px;color:var(--warn);background:var(--warn-dim);border:0.5px solid rgba(224,168,74,0.2);border-radius:var(--radius);padding:.5rem .9rem;margin-bottom:1rem;display:none;}
   .date-past-notice.show{display:block;}
@@ -102,42 +102,50 @@
   .section-heading::after{content:'';flex:1;height:.5px;background:var(--border);}
 
   /* Exercise cards */
-  .ex-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:.9rem 1.1rem;margin-bottom:8px;transition:border-color .18s,background .18s;position:relative;overflow:hidden;}
-  .ex-card.done{border-color:rgba(184,224,74,0.2);}
+  .ex-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:.9rem 1.1rem;margin-bottom:8px;transition:border-color .18s;position:relative;overflow:hidden;}
+  .ex-card.done{border-color:rgba(184,224,74,0.25);background:rgba(184,224,74,0.03);}
   .ex-card.done::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:99px 0 0 99px;}
-  .ex-card.running{border-color:rgba(184,224,74,0.4);}
+  .ex-card.timer-running{border-color:rgba(184,224,74,0.35);}
 
-  .ex-top{display:flex;gap:12px;align-items:flex-start;}
-  .ex-num{width:26px;height:26px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);flex-shrink:0;margin-top:2px;}
+  .ex-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+  .ex-num{width:24px;height:24px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);flex-shrink:0;margin-top:2px;}
   .ex-card.done .ex-num{background:var(--accent-dim);color:var(--accent);}
   .ex-body{flex:1;min-width:0;}
-  .ex-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px;}
+  .ex-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px;}
   .ex-card.done .ex-name{color:var(--text2);}
-  .ex-desc{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:7px;}
-  .ex-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+  .ex-desc{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:6px;}
+  .ex-meta{display:flex;gap:6px;flex-wrap:wrap;}
   .badge{font-size:11px;font-family:'DM Mono',monospace;padding:2px 9px;border-radius:99px;border:0.5px solid var(--border);color:var(--text3);}
   .badge-green{background:var(--accent-dim);border-color:rgba(184,224,74,0.2);color:var(--accent2);}
   .badge-time{background:var(--surface2);}
 
-  /* Per-exercise timer */
-  .ex-timer{display:flex;align-items:center;gap:8px;padding:.6rem .8rem;background:var(--surface2);border-radius:var(--radius);border:0.5px solid var(--border);}
-  .ex-timer-display{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--text);min-width:52px;}
-  .ex-timer-display.running{color:var(--accent);}
-  .ex-timer-display.done-flash{color:var(--accent2);}
+  /* Check button */
+  .ex-check-btn{
+    width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border2);
+    background:var(--surface2);color:var(--text3);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    font-size:16px;transition:all .15s;margin-top:0;
+  }
+  .ex-check-btn:hover{border-color:rgba(184,224,74,0.4);color:var(--accent);background:var(--accent-dim);}
+  .ex-check-btn.checked{background:var(--accent-dim);border-color:rgba(184,224,74,0.5);color:var(--accent);}
 
-  /* Timer progress ring */
-  .ex-timer-ring{flex-shrink:0;transform:rotate(-90deg);}
-  .ex-timer-ring circle{transition:stroke-dashoffset .9s linear;}
+  /* Per-exercise timer row */
+  .ex-timer-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding:.55rem .8rem;background:var(--surface2);border-radius:var(--radius);border:0.5px solid var(--border);}
+  .ex-card.done .ex-timer-row{opacity:.45;pointer-events:none;}
+
+  .ring-wrap{flex-shrink:0;transform:rotate(-90deg);}
+  .ring-wrap circle{transition:stroke-dashoffset 1s linear;}
+
+  .ex-timer-display{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;color:var(--text);min-width:46px;}
+  .ex-timer-display.running{color:var(--accent);}
 
   .ex-timer-btns{display:flex;gap:5px;margin-left:auto;}
-  .ex-tbtn{padding:5px 12px;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s;}
+  .ex-tbtn{padding:5px 11px;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;}
   .ex-tbtn-start{background:var(--accent);color:#0e0f0e;}
   .ex-tbtn-start:hover{background:#c9f055;}
   .ex-tbtn-start.active{background:#e05a5a;color:#fff;}
   .ex-tbtn-reset{background:var(--surface);color:var(--text2);border:0.5px solid var(--border);}
   .ex-tbtn-reset:hover{color:var(--text);border-color:var(--border2);}
-
-  .ex-card.done .ex-timer{opacity:.5;pointer-events:none;}
 
   /* Complete banner */
   .complete-banner{background:var(--accent-dim);border:0.5px solid rgba(184,224,74,0.3);border-radius:var(--radius-lg);padding:1.25rem;text-align:center;margin-top:1.5rem;display:none;}
@@ -177,11 +185,11 @@
     .app{padding:1.25rem 1rem 5rem;}
     h1{font-size:22px;}
     .stat-card-val{font-size:22px;}
+    .ex-tbtn{padding:5px 8px;font-size:11px;}
   }
 </style>
 </head>
 <body>
-
 <div class="loading-overlay" id="loadingOverlay"><div class="loading-txt">Laden...</div></div>
 
 <!-- Auth -->
@@ -194,14 +202,8 @@
       <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Anmelden</button>
       <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Registrieren</button>
     </div>
-    <div class="field-wrap">
-      <div class="field-label">E-Mail</div>
-      <input type="email" id="authEmail" placeholder="name@beispiel.ch"/>
-    </div>
-    <div class="field-wrap">
-      <div class="field-label">Passwort</div>
-      <input type="password" id="authPassword" placeholder="Mindestens 6 Zeichen"/>
-    </div>
+    <div class="field-wrap"><div class="field-label">E-Mail</div><input type="email" id="authEmail" placeholder="name@beispiel.ch"/></div>
+    <div class="field-wrap"><div class="field-label">Passwort</div><input type="password" id="authPassword" placeholder="Mindestens 6 Zeichen"/></div>
     <button class="btn-primary" id="authBtn" onclick="handleAuth()">Anmelden</button>
     <div class="auth-msg" id="authMsg"></div>
   </div>
@@ -228,7 +230,6 @@
         <button class="date-arrow" id="dateNext" onclick="changeDate(1)">&#8594;</button>
       </div>
       <div class="date-past-notice" id="datePastNotice">Vergangener Tag – Einträge werden nachgetragen.</div>
-
       <div class="week-tabs" id="weekTabs"></div>
       <div class="summary-bar">
         <div class="summary-card"><div class="summary-val accent" id="doneCount">0</div><div class="summary-lbl">Erledigt</div></div>
@@ -258,18 +259,9 @@
           <div class="stat-card"><div class="stat-card-val" id="statMinutes">0</div><div class="stat-card-lbl">Minuten trainiert</div><div class="stat-card-sub">geschätzt</div></div>
         </div>
       </div>
-      <div class="stats-section">
-        <div class="stats-title">Letzte 21 Tage</div>
-        <div class="streak-grid" id="streakGrid"></div>
-      </div>
-      <div class="stats-section">
-        <div class="stats-title">Übungen pro Woche</div>
-        <div class="chart-wrap"><canvas id="weekChart"></canvas></div>
-      </div>
-      <div class="stats-section">
-        <div class="stats-title">Fortschritt pro Phase</div>
-        <div id="weekProgressBars"></div>
-      </div>
+      <div class="stats-section"><div class="stats-title">Letzte 21 Tage</div><div class="streak-grid" id="streakGrid"></div></div>
+      <div class="stats-section"><div class="stats-title">Übungen pro Woche</div><div class="chart-wrap"><canvas id="weekChart"></canvas></div></div>
+      <div class="stats-section"><div class="stats-title">Fortschritt pro Phase</div><div id="weekProgressBars"></div></div>
     </div>
   </div>
 
@@ -290,29 +282,7 @@ const SUPABASE_URL='https://dejogzziiqjigjusjcrh.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlam9nenppaXFqaWdqdXNqY3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzE2MTcsImV4cCI6MjA4OTg0NzYxN30.J6WVxrVoAtJlu1wwVMbGJoMFyt3k_smvDM8y8AFQ59A';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-// Parse time string like "2 min", "3 × 30 Sek.", "2 × 1 min", "4 × max", "2 × 5 Wdh." → seconds
-function parseTimerSeconds(timeStr) {
-  // "X min" → X*60
-  let m = timeStr.match(/^(\d+)\s*min$/);
-  if(m) return parseInt(m[1])*60;
-  // "N × M min"
-  m = timeStr.match(/(\d+)\s*×\s*(\d+)\s*min/);
-  if(m) return parseInt(m[2])*60;
-  // "N × M Sek."
-  m = timeStr.match(/(\d+)\s*×\s*(\d+)\s*Sek/);
-  if(m) return parseInt(m[2]);
-  // "N × M Wdh." → 30 sec per set as default
-  m = timeStr.match(/(\d+)\s*×\s*(\d+)\s*Wdh/);
-  if(m) return 30;
-  // "N × max" → 60 sec
-  m = timeStr.match(/×\s*max/);
-  if(m) return 60;
-  // single "M Sek."
-  m = timeStr.match(/(\d+)\s*Sek/);
-  if(m) return parseInt(m[1]);
-  return 60;
-}
-
+// ── Exercise data ──
 const weeks=[
   {label:"Wo. 1–2",title:"Gleichgewicht aufbauen",tip:"Stelle das Board nahe einer Wand auf. Barfuss üben gibt besseres Feedback.",sections:[
     {name:"Aufwärmen",items:[
@@ -358,91 +328,116 @@ const weeks=[
   ]}
 ];
 
-// ── Timer state: key = "wi-si-ei" ──
-// Each: { total, remaining, running, interval }
-const timers={};
+// ── Parse time → seconds ──
+function parseSecs(t){
+  let m;
+  m=t.match(/^(\d+)\s*min$/);if(m)return+m[1]*60;
+  m=t.match(/(\d+)\s*×\s*(\d+)\s*min/);if(m)return+m[2]*60;
+  m=t.match(/(\d+)\s*×\s*(\d+)\s*Sek/);if(m)return+m[2];
+  m=t.match(/(\d+)\s*×\s*(\d+)\s*Wdh/);if(m)return 30;
+  m=t.match(/×\s*max/);if(m)return 60;
+  m=t.match(/(\d+)\s*Sek/);if(m)return+m[1];
+  return 60;
+}
 
-function timerKey(wi,si,ei){return wi+'-'+si+'-'+ei;}
+// ── Timer state (survives re-renders) ──
+// key: "wi-si-ei"  value: {total, remaining, running, intervalId}
+const timerState={};
+const RING_C=100.53; // 2*PI*16
 
-function getTimer(wi,si,ei){
-  const k=timerKey(wi,si,ei);
-  if(!timers[k]){
-    const total=parseTimerSeconds(weeks[wi].sections[si].items[ei].time);
-    timers[k]={total,remaining:total,running:false,interval:null};
+function getTS(wi,si,ei){
+  const k=`${wi}-${si}-${ei}`;
+  if(!timerState[k]){
+    const total=parseSecs(weeks[wi].sections[si].items[ei].time);
+    timerState[k]={total,remaining:total,running:false,intervalId:null};
   }
-  return timers[k];
+  return timerState[k];
 }
 
-function resetTimerState(wi,si,ei){
-  const k=timerKey(wi,si,ei);
-  const t=timers[k];
-  if(!t)return;
-  clearInterval(t.interval);
-  t.running=false;
-  t.remaining=t.total;
-  t.interval=null;
-}
-
-// Ring circumference for r=16: 2*PI*16 ≈ 100.5
-const RING_C=100.53;
-
-function updateTimerUI(wi,si,ei){
-  const k=timerKey(wi,si,ei);
-  const t=timers[k];
-  if(!t)return;
-  const dispEl=document.getElementById('td-'+k);
-  const startBtn=document.getElementById('ts-'+k);
-  const ring=document.getElementById('tr-'+k);
+// Update only the timer UI elements (no full re-render)
+function updateTimerDOM(wi,si,ei){
+  const k=`${wi}-${si}-${ei}`;
+  const ts=timerState[k]; if(!ts)return;
+  const dispEl=document.getElementById(`td-${k}`);
+  const startBtn=document.getElementById(`ts-${k}`);
+  const ringEl=document.getElementById(`tr-${k}`);
   if(!dispEl)return;
-
-  const m=Math.floor(t.remaining/60).toString().padStart(2,'0');
-  const s=(t.remaining%60).toString().padStart(2,'0');
-  dispEl.textContent=m+':'+s;
-  dispEl.className='ex-timer-display'+(t.running?' running':'')+(t.remaining===0&&!t.running?' done-flash':'');
-
-  if(startBtn){
-    startBtn.textContent=t.running?'Stopp':'Start';
-    startBtn.classList.toggle('active',t.running);
+  const m=Math.floor(ts.remaining/60).toString().padStart(2,'0');
+  const s=(ts.remaining%60).toString().padStart(2,'0');
+  dispEl.textContent=`${m}:${s}`;
+  dispEl.className='ex-timer-display'+(ts.running?' running':'');
+  if(startBtn){startBtn.textContent=ts.running?'Stopp':'Start';startBtn.classList.toggle('active',ts.running);}
+  if(ringEl){
+    const offset=ts.total>0?RING_C*(1-ts.remaining/ts.total):0;
+    ringEl.style.strokeDashoffset=offset;
   }
-  if(ring){
-    const frac=t.total>0?t.remaining/t.total:0;
-    const offset=RING_C*(1-frac);
-    ring.style.strokeDashoffset=offset;
-  }
+  // Update card border
+  const card=document.getElementById(`card-${k}`);
+  if(card){card.classList.toggle('timer-running',ts.running&&!card.classList.contains('done'));}
 }
 
-async function startStopTimer(wi,si,ei){
-  const t=getTimer(wi,si,ei);
-  if(t.running){
-    clearInterval(t.interval);t.running=false;t.interval=null;
-    updateTimerUI(wi,si,ei);
-    return;
+// Update summary bar & progress without full re-render
+function updateSummaryDOM(){
+  const dateStr=selectedDateStr();
+  const doneset=doneForDate(dateStr);
+  const done=doneCount(currentWeek,doneset),total=totalItems(currentWeek);
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('doneCount').textContent=done;
+  document.getElementById('progressPct').textContent=pct+' %';
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('completeBanner').classList.toggle('show',done===total&&total>0);
+}
+
+// Update a single card's done appearance without rebuilding the whole list
+function updateCardDoneDOM(wi,si,ei,isDoneNow){
+  const k=`${wi}-${si}-${ei}`;
+  const card=document.getElementById(`card-${k}`);
+  const numEl=document.getElementById(`num-${k}`);
+  const checkBtn=document.getElementById(`check-${k}`);
+  const timerRow=document.getElementById(`timer-row-${k}`);
+  if(!card)return;
+  card.classList.toggle('done',isDoneNow);
+  card.classList.toggle('timer-running',false);
+  if(numEl)numEl.textContent=isDoneNow?'✓':(ei+1);
+  if(checkBtn)checkBtn.classList.toggle('checked',isDoneNow);
+  if(timerRow)timerRow.style.opacity=isDoneNow?'0.45':'1';
+  if(timerRow)timerRow.style.pointerEvents=isDoneNow?'none':'';
+}
+
+// ── Timer actions ──
+function startStopTimer(wi,si,ei){
+  const ts=getTS(wi,si,ei);
+  if(ts.running){
+    clearInterval(ts.intervalId);ts.running=false;ts.intervalId=null;
+    updateTimerDOM(wi,si,ei);return;
   }
-  if(t.remaining===0){t.remaining=t.total;}
-  t.running=true;
-  updateTimerUI(wi,si,ei);
-  t.interval=setInterval(async()=>{
-    t.remaining--;
-    updateTimerUI(wi,si,ei);
-    if(t.remaining<=0){
-      clearInterval(t.interval);t.running=false;t.interval=null;
-      // Auto-mark done
+  if(ts.remaining<=0)ts.remaining=ts.total;
+  ts.running=true;
+  updateTimerDOM(wi,si,ei);
+  ts.intervalId=setInterval(()=>{
+    ts.remaining--;
+    updateTimerDOM(wi,si,ei);
+    if(ts.remaining<=0){
+      clearInterval(ts.intervalId);ts.running=false;ts.intervalId=null;
+      updateTimerDOM(wi,si,ei);
+      // Auto-mark done — check not already done
       const doneset=doneForDate(selectedDateStr());
-      const key2=wi+'-'+weeks[wi].sections[si].name+'-'+weeks[wi].sections[si].items[ei].name;
-      if(!doneset[key2]) await markDone(wi,si,ei);
+      const exName=weeks[wi].sections[si].items[ei].name;
+      const secName=weeks[wi].sections[si].name;
+      if(!doneset[`${wi}-${secName}-${exName}`]) doMarkDone(wi,si,ei);
     }
   },1000);
 }
 
 function resetTimer(wi,si,ei){
-  resetTimerState(wi,si,ei);
-  updateTimerUI(wi,si,ei);
+  const ts=getTS(wi,si,ei);
+  clearInterval(ts.intervalId);ts.running=false;ts.intervalId=null;ts.remaining=ts.total;
+  updateTimerDOM(wi,si,ei);
 }
 
 // ── App state ──
 let currentWeek=0,currentTab='training';
-let allTrainings=[],userId=null,weekChart=null;
-let dateOffset=0;
+let allTrainings=[],userId=null,weekChart=null,dateOffset=0;
 
 function todayStr(){return new Date().toISOString().slice(0,10);}
 function selectedDateStr(){const d=new Date();d.setDate(d.getDate()+dateOffset);return d.toISOString().slice(0,10);}
@@ -475,12 +470,16 @@ async function handleAuth(){
 }
 async function handleLogout(){await sb.auth.signOut();userId=null;allTrainings=[];document.getElementById('mainApp').style.display='none';document.getElementById('authScreen').style.display='flex';}
 
-// ── Data ──
+// ── Data helpers ──
 async function loadTrainings(){const{data,error}=await sb.from('trainings').select('*').eq('user_id',userId).order('created_at');if(error){console.error(error);return;}allTrainings=data||[];}
-function doneForDate(dateStr){const set={};allTrainings.forEach(r=>{if(r.date===dateStr)set[r.week+'-'+r.section+'-'+r.exercise]=true;});return set;}
+function doneForDate(dateStr){const set={};allTrainings.forEach(r=>{if(r.date===dateStr)set[`${r.week}-${r.section}-${r.exercise}`]=true;});return set;}
 function showErr(msg){const el=document.getElementById('errBanner');el.textContent=msg;el.classList.toggle('show',!!msg);}
+function isDone(wi,si,ei,doneset){return !!doneset[`${wi}-${weeks[wi].sections[si].name}-${weeks[wi].sections[si].items[ei].name}`];}
+function totalItems(w){return weeks[w].sections.reduce((a,s)=>a+s.items.length,0);}
+function doneCount(w,doneset){let c=0;weeks[w].sections.forEach((s,si)=>s.items.forEach((_,ei)=>{if(isDone(w,si,ei,doneset))c++;}));return c;}
 
-async function markDone(wi,si,ei){
+// Mark done in DB + local state, then update DOM surgically (no full re-render)
+async function doMarkDone(wi,si,ei){
   const ex=weeks[wi].sections[si].items[ei];
   const secName=weeks[wi].sections[si].name;
   const dateStr=selectedDateStr();
@@ -488,34 +487,33 @@ async function markDone(wi,si,ei){
   const{data,error}=await sb.from('trainings').insert(row).select().single();
   if(error){showErr('Fehler: '+error.message);console.error(error);return;}
   if(data)allTrainings.push(data);
-  renderAll();
+  updateCardDoneDOM(wi,si,ei,true);
+  updateSummaryDOM();
+  if(currentTab==='stats')renderStats();
+}
+
+// Unmark done
+async function doUnmarkDone(wi,si,ei){
+  const ex=weeks[wi].sections[si].items[ei];
+  const secName=weeks[wi].sections[si].name;
+  const dateStr=selectedDateStr();
+  const{error}=await sb.from('trainings').delete().eq('user_id',userId).eq('date',dateStr).eq('week',wi).eq('section',secName).eq('exercise',ex.name);
+  if(error){showErr('Fehler: '+error.message);return;}
+  allTrainings=allTrainings.filter(r=>!(r.date===dateStr&&r.week===wi&&r.section===secName&&r.exercise===ex.name));
+  resetTimer(wi,si,ei);
+  updateCardDoneDOM(wi,si,ei,false);
+  updateSummaryDOM();
+  if(currentTab==='stats')renderStats();
 }
 
 async function toggleExercise(wi,si,ei){
-  const ex=weeks[wi].sections[si].items[ei];
-  const secName=weeks[wi].sections[si].name;
-  const key=wi+'-'+secName+'-'+ex.name;
-  const dateStr=selectedDateStr();
-  const doneset=doneForDate(dateStr);
   showErr('');
-  if(doneset[key]){
-    const{error}=await sb.from('trainings').delete().eq('user_id',userId).eq('date',dateStr).eq('week',wi).eq('section',secName).eq('exercise',ex.name);
-    if(error){showErr('Fehler: '+error.message);return;}
-    allTrainings=allTrainings.filter(r=>!(r.date===dateStr&&r.week===wi&&r.section===secName&&r.exercise===ex.name));
-    // Also reset timer
-    resetTimerState(wi,si,ei);
-  } else {
-    await markDone(wi,si,ei);
-    return;
-  }
-  renderAll();
+  const doneset=doneForDate(selectedDateStr());
+  if(isDone(wi,si,ei,doneset)) await doUnmarkDone(wi,si,ei);
+  else await doMarkDone(wi,si,ei);
 }
 
-function isDone(wi,si,ei,doneset){return !!doneset[wi+'-'+weeks[wi].sections[si].name+'-'+weeks[wi].sections[si].items[ei].name];}
-function totalItems(w){return weeks[w].sections.reduce((a,s)=>a+s.items.length,0);}
-function doneCount(w,doneset){let c=0;weeks[w].sections.forEach((s,si)=>s.items.forEach((_,ei)=>{if(isDone(w,si,ei,doneset))c++;}));return c;}
-
-// ── Render training ──
+// ── Render training (full rebuild) ──
 function renderTabs(){
   const el=document.getElementById('weekTabs');el.innerHTML='';
   weeks.forEach((w,i)=>{
@@ -545,17 +543,19 @@ function renderTraining(){
     const sh=document.createElement('div');sh.className='section-heading';sh.textContent=sec.name;list.appendChild(sh);
     sec.items.forEach((ex,ei)=>{
       const d=isDone(currentWeek,si,ei,doneset);
-      const t=getTimer(currentWeek,si,ei);
-      const k=timerKey(currentWeek,si,ei);
-      const m=Math.floor(t.remaining/60).toString().padStart(2,'0');
-      const s=(t.remaining%60).toString().padStart(2,'0');
-      const ringOffset=t.total>0?RING_C*(1-t.remaining/t.total):0;
+      const ts=getTS(currentWeek,si,ei);
+      const k=`${currentWeek}-${si}-${ei}`;
+      const m=Math.floor(ts.remaining/60).toString().padStart(2,'0');
+      const s=(ts.remaining%60).toString().padStart(2,'0');
+      const ringOffset=ts.total>0?RING_C*(1-ts.remaining/ts.total):0;
 
       const card=document.createElement('div');
-      card.className='ex-card'+(d?' done':t.running?' running':'');
+      card.id=`card-${k}`;
+      card.className='ex-card'+(d?' done':ts.running?' timer-running':'');
+
       card.innerHTML=`
         <div class="ex-top">
-          <div class="ex-num">${d?'✓':(ei+1)}</div>
+          <div class="ex-num" id="num-${k}">${d?'✓':(ei+1)}</div>
           <div class="ex-body">
             <div class="ex-name">${ex.name}</div>
             <div class="ex-desc">${ex.desc}</div>
@@ -563,36 +563,34 @@ function renderTraining(){
               <span class="badge badge-time">⏱ ${ex.time}</span>
               <span class="badge badge-green">${ex.tip}</span>
             </div>
-            <div class="ex-timer">
-              <svg class="ex-timer-ring" width="36" height="36" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="2"/>
-                <circle id="tr-${k}" cx="18" cy="18" r="16" fill="none"
-                  stroke="${d?'rgba(184,224,74,0.3)':'rgba(184,224,74,0.8)'}"
-                  stroke-width="2"
-                  stroke-dasharray="${RING_C}"
-                  stroke-dashoffset="${ringOffset}"
-                  stroke-linecap="round"/>
-              </svg>
-              <div class="ex-timer-display${t.running?' running':''}" id="td-${k}">${m}:${s}</div>
-              <div class="ex-timer-btns">
-                <button class="ex-tbtn ex-tbtn-start${t.running?' active':''}" id="ts-${k}"
-                  onclick="event.stopPropagation();startStopTimer(${currentWeek},${si},${ei})">${t.running?'Stopp':'Start'}</button>
-                <button class="ex-tbtn ex-tbtn-reset"
-                  onclick="event.stopPropagation();resetTimer(${currentWeek},${si},${ei})">Reset</button>
-              </div>
-            </div>
+          </div>
+          <button id="check-${k}" class="ex-check-btn${d?' checked':''}"
+            onclick="event.stopPropagation();toggleExercise(${currentWeek},${si},${ei})"
+            title="${d?'Als unerledigt markieren':'Als erledigt markieren'}">
+            ${d?'✓':'○'}
+          </button>
+        </div>
+        <div class="ex-timer-row" id="timer-row-${k}" style="${d?'opacity:.45;pointer-events:none':''}">
+          <svg class="ring-wrap" width="34" height="34" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="2"/>
+            <circle id="tr-${k}" cx="18" cy="18" r="16" fill="none"
+              stroke="rgba(184,224,74,0.8)" stroke-width="2"
+              stroke-dasharray="${RING_C}" stroke-dashoffset="${ringOffset}"
+              stroke-linecap="round"/>
+          </svg>
+          <div id="td-${k}" class="ex-timer-display${ts.running?' running':''}">${m}:${s}</div>
+          <div class="ex-timer-btns">
+            <button id="ts-${k}" class="ex-tbtn ex-tbtn-start${ts.running?' active':''}"
+              onclick="startStopTimer(${currentWeek},${si},${ei})">${ts.running?'Stopp':'Start'}</button>
+            <button class="ex-tbtn ex-tbtn-reset"
+              onclick="resetTimer(${currentWeek},${si},${ei})">Reset</button>
           </div>
         </div>`;
 
-      // Click on card (not timer buttons) toggles done
-      card.onclick=(e)=>{
-        if(e.target.closest('.ex-timer-btns'))return;
-        toggleExercise(currentWeek,si,ei);
-      };
       list.appendChild(card);
     });
   });
-  document.getElementById('completeBanner').classList.toggle('show',doneCount(currentWeek,doneset)===totalItems(currentWeek));
+  document.getElementById('completeBanner').classList.toggle('show',done===total&&total>0);
 }
 
 // ── Stats ──
@@ -609,15 +607,13 @@ function renderStats(){
   document.getElementById('statMinutes').textContent=totalMin;
   const sg=document.getElementById('streakGrid');sg.innerHTML='';
   for(let i=20;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const dot=document.createElement('div');dot.className='streak-dot'+(daySet.has(ds)?' active':'')+(ds===today?' today':'');dot.textContent=d.getDate();dot.title=ds;sg.appendChild(dot);}
-  const byWeek={};
-  allTrainings.forEach(r=>{const d=new Date(r.date+'T12:00:00');const jan1=new Date(d.getFullYear(),0,1);const cw=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);const key='KW'+String(cw).padStart(2,'0');byWeek[key]=(byWeek[key]||0)+1;});
+  const byWeek={};allTrainings.forEach(r=>{const d=new Date(r.date+'T12:00:00');const jan1=new Date(d.getFullYear(),0,1);const cw=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);const key='KW'+String(cw).padStart(2,'0');byWeek[key]=(byWeek[key]||0)+1;});
   const ctx=document.getElementById('weekChart').getContext('2d');
   if(weekChart){weekChart.destroy();weekChart=null;}
   const labels=Object.keys(byWeek).sort().slice(-8);
   if(labels.length){weekChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:labels.map(k=>byWeek[k]),backgroundColor:'rgba(184,224,74,0.2)',borderColor:'rgba(184,224,74,0.7)',borderWidth:1,borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5a5856',font:{family:'DM Mono',size:11}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#5a5856',font:{family:'DM Mono',size:11},stepSize:1},grid:{color:'rgba(255,255,255,0.04)'},beginAtZero:true}}}});}
   else{ctx.canvas.parentElement.innerHTML='<div class="no-data">Noch keine Trainingsdaten</div>';}
-  const byPhase={0:new Set(),1:new Set(),2:new Set()};
-  allTrainings.forEach(r=>{if(byPhase[r.week]!==undefined)byPhase[r.week].add(r.exercise);});
+  const byPhase={0:new Set(),1:new Set(),2:new Set()};allTrainings.forEach(r=>{if(byPhase[r.week]!==undefined)byPhase[r.week].add(r.exercise);});
   const bars=document.getElementById('weekProgressBars');bars.innerHTML='';
   weeks.forEach((w,i)=>{const total=w.sections.reduce((a,s)=>a+s.items.length,0);const done=byPhase[i]?byPhase[i].size:0;const pct=total?Math.min(100,Math.round(done/total*100)):0;bars.innerHTML+=`<div class="week-progress-row"><div class="wpr-label">${w.label}</div><div class="wpr-track"><div class="wpr-fill" style="width:${pct}%"></div></div><div class="wpr-pct">${pct} %</div></div>`;});
 }
