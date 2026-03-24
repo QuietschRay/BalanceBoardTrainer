@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Balance Board Trainer</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0e0f0e;
@@ -23,28 +23,12 @@
     --warn: #e0a84a;
     --warn-dim: rgba(224,168,74,0.12);
     --blue: #4a9ee0;
-    --blue-dim: rgba(74,158,224,0.12);
     --radius: 12px;
     --radius-lg: 18px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-  }
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(184,224,74,0.05) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
-  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+  body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(184,224,74,0.05) 0%, transparent 60%); pointer-events: none; z-index: 0; }
   .app { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 6rem; }
 
   /* Auth */
@@ -174,6 +158,8 @@
   .wpr-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 0.4s ease; }
   .wpr-pct { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text2); width: 34px; text-align: right; flex-shrink: 0; }
   .no-data { font-size: 13px; color: var(--text3); text-align: center; padding: 2rem 0; font-family: 'DM Mono', monospace; }
+  .err-banner { background: rgba(224,90,90,0.1); border: 0.5px solid rgba(224,90,90,0.3); border-radius: var(--radius); padding: 0.65rem 1rem; font-size: 13px; color: #e05a5a; margin-bottom: 1rem; display: none; }
+  .err-banner.show { display: block; }
 
   /* Loading */
   .loading-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; }
@@ -195,7 +181,7 @@
 <div id="authScreen" style="display:none;">
   <div class="auth-card">
     <div class="auth-logo">Balance Board Trainer</div>
-    <h1 class="auth-title">Guten <span>Morgen</span></h1>
+    <h1 class="auth-title">Guten <span>Tag</span></h1>
     <p class="auth-sub">Melde dich an um dein Training zu verfolgen.</p>
     <div class="auth-tabs">
       <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Anmelden</button>
@@ -237,6 +223,7 @@
         <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       </div>
       <div class="tip-box" id="tipBox"></div>
+      <div class="err-banner" id="errBanner"></div>
       <div class="timer-card">
         <div class="timer-left">
           <div class="timer-lbl">Übungs-Timer</div>
@@ -265,26 +252,10 @@
       <div class="stats-section">
         <div class="stats-title">Übersicht</div>
         <div class="stat-cards">
-          <div class="stat-card">
-            <div class="stat-card-val green" id="statStreak">0</div>
-            <div class="stat-card-lbl">Tage in Folge</div>
-            <div class="stat-card-sub" id="statStreakSub"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-val blue" id="statTotalDays">0</div>
-            <div class="stat-card-lbl">Trainingstage total</div>
-            <div class="stat-card-sub">von 42 möglich</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-val warn" id="statExercises">0</div>
-            <div class="stat-card-lbl">Übungen absolviert</div>
-            <div class="stat-card-sub"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-val" id="statMinutes">0</div>
-            <div class="stat-card-lbl">Minuten trainiert</div>
-            <div class="stat-card-sub">geschätzt</div>
-          </div>
+          <div class="stat-card"><div class="stat-card-val green" id="statStreak">0</div><div class="stat-card-lbl">Tage in Folge</div><div class="stat-card-sub" id="statStreakSub"></div></div>
+          <div class="stat-card"><div class="stat-card-val blue" id="statTotalDays">0</div><div class="stat-card-lbl">Trainingstage total</div><div class="stat-card-sub">von 42 möglich</div></div>
+          <div class="stat-card"><div class="stat-card-val warn" id="statExercises">0</div><div class="stat-card-lbl">Übungen absolviert</div><div class="stat-card-sub"></div></div>
+          <div class="stat-card"><div class="stat-card-val" id="statMinutes">0</div><div class="stat-card-lbl">Minuten trainiert</div><div class="stat-card-sub">geschätzt</div></div>
         </div>
       </div>
       <div class="stats-section">
@@ -316,134 +287,130 @@
 
 <script>
 const SUPABASE_URL = 'https://dejogzziiqjigjusjcrh.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_8AZRGe40UJNbsXLxsqEGyA_Uic43D_H';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlam9nenppaXFqaWdqdXNqY3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzE2MTcsImV4cCI6MjA4OTg0NzYxN30.J6WVxrVoAtJlu1wwVMbGJoMFyt3k_smvDM8y8AFQ59A';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const weeks = [
-  {
-    label:"Wo. 1–2", title:"Gleichgewicht aufbauen",
-    tip:"Stelle das Board nahe einer Wand auf. Barfuss üben gibt besseres Feedback. Noch keine grossen Kippbewegungen.",
-    sections:[
-      {name:"Aufwärmen",items:[
-        {name:"Standübung mit Support",desc:"Auf das Board stellen, Wand halten. Gleichgewichtspunkt finden – noch keine Kippbewegung.",time:"2 min",tip:"Ruhig atmen"},
-        {name:"Gewichtsverlagerung seitlich",desc:"Langsam von links nach rechts verlagern, Board leicht neigen. Nicht bis zum Anschlag.",time:"2 min",tip:"Kontrolliert"}
-      ]},
-      {name:"Hauptteil",items:[
-        {name:"Freistehend halten",desc:"Board ohne Wandstütze ausbalancieren. Notiere deine beste Haltezeit.",time:"3 × 30 Sek.",tip:"Blick fixieren"},
-        {name:"Vor-/Rückwärtskippen",desc:"Gleichmässige, kontrollierte Vor-Rück-Bewegung. Amplitude langsam steigern.",time:"2 × 1 min",tip:"Knie weich"},
-        {name:"Seitliches Kippen",desc:"Links-rechts in gleichmässigem Rhythmus. Körpermitte angespannt halten.",time:"2 × 1 min",tip:"Hüfte ruhig"}
-      ]},
-      {name:"Cool-down",items:[
-        {name:"Sanftes Balancieren",desc:"Entspannt stehen, leichte Ausgleichsbewegungen zulassen. Augen schliessen als Bonus.",time:"2 min",tip:"Locker lassen"}
-      ]}
-    ]
-  },
-  {
-    label:"Wo. 3–4", title:"Stabilität & Kontrolle",
-    tip:"Wandunterstützung weglassen. Konzentriere dich auf saubere Bewegungen – Qualität vor Dauer.",
-    sections:[
-      {name:"Aufwärmen",items:[
-        {name:"Aufwärmbalance",desc:"Frei auf dem Board stehen, alle Richtungen leicht antasten.",time:"2 min",tip:"Einschwingen"}
-      ]},
-      {name:"Hauptteil",items:[
-        {name:"Gezielte Kreisbewegung",desc:"Board kreisförmig führen – vorne über rechts nach hinten und links. Beide Richtungen.",time:"3 × 1 min",tip:"Ruhig und rund"},
-        {name:"Arm-Variationen",desc:"Arme in verschiedene Positionen bringen während du balancierst: ausgestreckt, über Kopf, vor Brust.",time:"2 × 1 min",tip:"Kern anspannen"},
-        {name:"Haltezeiten steigern",desc:"Board waagerecht halten ohne Bodenkontakt. Ziel: 60 Sekunden am Stück.",time:"4 × max",tip:"Zählen hilft"},
-        {name:"Kniebeugen auf dem Board",desc:"Leichte Kniebeugen (10–15 cm) während du balancierst. Sehr langsam ausführen.",time:"2 × 5 Wdh.",tip:"Keine Eile"}
-      ]},
-      {name:"Cool-down",items:[
-        {name:"Entspannungsstand",desc:"Augen geschlossen auf dem Board stehen. Auf die Körperwahrnehmung konzentrieren.",time:"2 min",tip:"Tief atmen"}
-      ]}
-    ]
-  },
-  {
-    label:"Wo. 5–6", title:"Ausdauer & Herausforderung",
-    tip:"Du spürst jetzt echte Fortschritte! Übungen kombinieren und kontrolliert an Grenzen herantasten.",
-    sections:[
-      {name:"Aufwärmen",items:[
-        {name:"Dynamischer Einstieg",desc:"Seitlich aufsteigen und sofort balancieren. Sprunggelenke vorher kreisen.",time:"1 min",tip:"Warm werden"}
-      ]},
-      {name:"Hauptteil",items:[
-        {name:"Einbeiniges Balancieren",desc:"Auf einem Bein stehen. Das andere leicht angehoben. Alle 20 Sek. wechseln.",time:"3 × 20 Sek.",tip:"Fuss locker"},
-        {name:"Ball fangen/werfen",desc:"Leichten Ball gegen die Wand werfen und fangen – auf dem Board.",time:"3 × 1 min",tip:"Kleiner Ball"},
-        {name:"Augen-zu-Balance",desc:"Mit geschlossenen Augen balancieren. Vestibuläres System wird stärker beansprucht.",time:"3 × 30 Sek.",tip:"Sicher stehen"},
-        {name:"Kombinations-Flow",desc:"Kreisbewegung + Kniebeuge + Arm-Overhead: alle drei kombiniert durchführen.",time:"2 × 2 min",tip:"Fliessen lassen"}
-      ]},
-      {name:"Cool-down",items:[
-        {name:"Cool-down Balance",desc:"Langsames, bewusstes Balancieren – Bewegungen verlangsamen, Körper beruhigen.",time:"2 min",tip:"Abschalten"}
-      ]}
-    ]
-  }
+  { label:"Wo. 1–2", title:"Gleichgewicht aufbauen", tip:"Stelle das Board nahe einer Wand auf. Barfuss üben gibt besseres Feedback.", sections:[
+    { name:"Aufwärmen", items:[
+      { name:"Standübung mit Support", desc:"Auf das Board stellen, Wand halten. Gleichgewichtspunkt finden.", time:"2 min", tip:"Ruhig atmen" },
+      { name:"Gewichtsverlagerung seitlich", desc:"Langsam von links nach rechts verlagern, Board leicht neigen.", time:"2 min", tip:"Kontrolliert" }
+    ]},
+    { name:"Hauptteil", items:[
+      { name:"Freistehend halten", desc:"Board ohne Wandstütze ausbalancieren. Notiere deine beste Haltezeit.", time:"3 × 30 Sek.", tip:"Blick fixieren" },
+      { name:"Vor-/Rückwärtskippen", desc:"Gleichmässige, kontrollierte Vor-Rück-Bewegung. Amplitude langsam steigern.", time:"2 × 1 min", tip:"Knie weich" },
+      { name:"Seitliches Kippen", desc:"Links-rechts in gleichmässigem Rhythmus. Körpermitte angespannt.", time:"2 × 1 min", tip:"Hüfte ruhig" }
+    ]},
+    { name:"Cool-down", items:[
+      { name:"Sanftes Balancieren", desc:"Entspannt stehen, leichte Ausgleichsbewegungen zulassen.", time:"2 min", tip:"Locker lassen" }
+    ]}
+  ]},
+  { label:"Wo. 3–4", title:"Stabilität & Kontrolle", tip:"Wandunterstützung weglassen. Qualität vor Dauer.", sections:[
+    { name:"Aufwärmen", items:[
+      { name:"Aufwärmbalance", desc:"Frei auf dem Board stehen, alle Richtungen leicht antasten.", time:"2 min", tip:"Einschwingen" }
+    ]},
+    { name:"Hauptteil", items:[
+      { name:"Gezielte Kreisbewegung", desc:"Board kreisförmig führen – beide Richtungen üben.", time:"3 × 1 min", tip:"Ruhig und rund" },
+      { name:"Arm-Variationen", desc:"Arme in verschiedene Positionen bringen während du balancierst.", time:"2 × 1 min", tip:"Kern anspannen" },
+      { name:"Haltezeiten steigern", desc:"Board waagerecht halten ohne Bodenkontakt. Ziel: 60 Sekunden.", time:"4 × max", tip:"Zählen hilft" },
+      { name:"Kniebeugen auf dem Board", desc:"Leichte Kniebeugen (10–15 cm) während du balancierst.", time:"2 × 5 Wdh.", tip:"Keine Eile" }
+    ]},
+    { name:"Cool-down", items:[
+      { name:"Entspannungsstand", desc:"Augen geschlossen auf dem Board stehen.", time:"2 min", tip:"Tief atmen" }
+    ]}
+  ]},
+  { label:"Wo. 5–6", title:"Ausdauer & Herausforderung", tip:"Du spürst jetzt echte Fortschritte! Übungen kombinieren.", sections:[
+    { name:"Aufwärmen", items:[
+      { name:"Dynamischer Einstieg", desc:"Seitlich aufsteigen und sofort balancieren.", time:"1 min", tip:"Warm werden" }
+    ]},
+    { name:"Hauptteil", items:[
+      { name:"Einbeiniges Balancieren", desc:"Auf einem Bein stehen. Das andere leicht angehoben. Alle 20 Sek. wechseln.", time:"3 × 20 Sek.", tip:"Fuss locker" },
+      { name:"Ball fangen/werfen", desc:"Leichten Ball gegen die Wand werfen und fangen – auf dem Board.", time:"3 × 1 min", tip:"Kleiner Ball" },
+      { name:"Augen-zu-Balance", desc:"Mit geschlossenen Augen balancieren.", time:"3 × 30 Sek.", tip:"Sicher stehen" },
+      { name:"Kombinations-Flow", desc:"Kreisbewegung + Kniebeuge + Arm-Overhead kombiniert.", time:"2 × 2 min", tip:"Fliessen lassen" }
+    ]},
+    { name:"Cool-down", items:[
+      { name:"Cool-down Balance", desc:"Langsames, bewusstes Balancieren – Körper beruhigen.", time:"2 min", tip:"Abschalten" }
+    ]}
+  ]}
 ];
 
-let currentWeek = 0, currentTab = 'training';
-let timerSeconds = 30, timerRunning = false, timerInterval = null, presetSeconds = 30;
-let todayDone = {}, allTrainings = [], userId = null, weekChart = null;
+let currentWeek=0, currentTab='training';
+let timerSeconds=30, timerRunning=false, timerInterval=null, presetSeconds=30;
+let todayDone={}, allTrainings=[], userId=null, weekChart=null;
 
 function todayStr() { return new Date().toISOString().slice(0,10); }
+function showErr(msg) { const el=document.getElementById('errBanner'); el.textContent=msg; el.classList.toggle('show',!!msg); }
 
 // ── Auth ──
-let authMode = 'login';
+let authMode='login';
 function switchAuthTab(mode) {
-  authMode = mode;
-  document.getElementById('tabLogin').classList.toggle('active', mode==='login');
-  document.getElementById('tabRegister').classList.toggle('active', mode==='register');
-  document.getElementById('authBtn').textContent = mode==='login' ? 'Anmelden' : 'Registrieren';
-  document.getElementById('authMsg').textContent = '';
+  authMode=mode;
+  document.getElementById('tabLogin').classList.toggle('active',mode==='login');
+  document.getElementById('tabRegister').classList.toggle('active',mode==='register');
+  document.getElementById('authBtn').textContent=mode==='login'?'Anmelden':'Registrieren';
+  document.getElementById('authMsg').textContent='';
 }
 async function handleAuth() {
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  const btn = document.getElementById('authBtn');
-  const msg = document.getElementById('authMsg');
-  if (!email || !password) { msg.textContent='Bitte alle Felder ausfüllen.'; msg.className='auth-msg err'; return; }
-  btn.disabled = true; msg.textContent = '';
-  const res = authMode==='login'
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPassword').value;
+  const btn=document.getElementById('authBtn');
+  const msg=document.getElementById('authMsg');
+  if(!email||!password){msg.textContent='Bitte alle Felder ausfüllen.';msg.className='auth-msg err';return;}
+  btn.disabled=true; msg.textContent='';
+  const res=authMode==='login'
     ? await sb.auth.signInWithPassword({email,password})
     : await sb.auth.signUp({email,password});
-  btn.disabled = false;
-  if (res.error) { msg.textContent=res.error.message; msg.className='auth-msg err'; }
-  else if (authMode==='register' && !res.data.session) { msg.textContent='Bestätigungs-E-Mail gesendet.'; msg.className='auth-msg ok'; }
+  btn.disabled=false;
+  if(res.error){msg.textContent=res.error.message;msg.className='auth-msg err';}
+  else if(authMode==='register'&&!res.data.session){msg.textContent='Bestätigungs-E-Mail gesendet.';msg.className='auth-msg ok';}
 }
 async function handleLogout() {
   await sb.auth.signOut();
-  userId=null; allTrainings=[]; todayDone={};
+  userId=null;allTrainings=[];todayDone={};
   document.getElementById('mainApp').style.display='none';
   document.getElementById('authScreen').style.display='flex';
 }
 
 // ── Data ──
 async function loadTrainings() {
-  const {data} = await sb.from('trainings').select('*').eq('user_id',userId).order('created_at');
-  allTrainings = data||[];
-  todayDone = {};
-  const today = todayStr();
-  allTrainings.forEach(r => { if(r.date===today) todayDone[r.week+'-'+r.section+'-'+r.exercise]=true; });
+  const {data,error}=await sb.from('trainings').select('*').eq('user_id',userId).order('created_at');
+  if(error){console.error('load error',error);return;}
+  allTrainings=data||[];
+  todayDone={};
+  const today=todayStr();
+  allTrainings.forEach(r=>{if(r.date===today)todayDone[r.week+'-'+r.section+'-'+r.exercise]=true;});
 }
 
 async function toggleExercise(wi,si,ei) {
-  const ex = weeks[wi].sections[si].items[ei];
-  const key = wi+'-'+weeks[wi].sections[si].name+'-'+ex.name;
-  const today = todayStr();
-  if (todayDone[key]) {
-    await sb.from('trainings').delete().eq('user_id',userId).eq('date',today).eq('week',wi).eq('section',weeks[wi].sections[si].name).eq('exercise',ex.name);
+  const ex=weeks[wi].sections[si].items[ei];
+  const secName=weeks[wi].sections[si].name;
+  const key=wi+'-'+secName+'-'+ex.name;
+  const today=todayStr();
+  showErr('');
+
+  if(todayDone[key]) {
+    const {error}=await sb.from('trainings').delete()
+      .eq('user_id',userId).eq('date',today).eq('week',wi).eq('section',secName).eq('exercise',ex.name);
+    if(error){showErr('Fehler: '+error.message);return;}
     delete todayDone[key];
-    allTrainings = allTrainings.filter(r=>!(r.date===today&&r.week===wi&&r.section===weeks[wi].sections[si].name&&r.exercise===ex.name));
+    allTrainings=allTrainings.filter(r=>!(r.date===today&&r.week===wi&&r.section===secName&&r.exercise===ex.name));
   } else {
-    const row={user_id:userId,date:today,week:wi,section:weeks[wi].sections[si].name,exercise:ex.name};
-    const {data} = await sb.from('trainings').insert(row).select().single();
+    const row={user_id:userId,date:today,week:wi,section:secName,exercise:ex.name};
+    const {data,error}=await sb.from('trainings').insert(row).select().single();
+    if(error){showErr('Fehler: '+error.message);console.error('insert error',error);return;}
     if(data){allTrainings.push(data);todayDone[key]=true;}
   }
   renderAll();
 }
 
-function isDone(wi,si,ei) { return !!todayDone[wi+'-'+weeks[wi].sections[si].name+'-'+weeks[wi].sections[si].items[ei].name]; }
-function totalItems(w) { return weeks[w].sections.reduce((a,s)=>a+s.items.length,0); }
-function doneCount(w) { let c=0; weeks[w].sections.forEach((s,si)=>s.items.forEach((_,ei)=>{if(isDone(w,si,ei))c++;})); return c; }
+function isDone(wi,si,ei){return !!todayDone[wi+'-'+weeks[wi].sections[si].name+'-'+weeks[wi].sections[si].items[ei].name];}
+function totalItems(w){return weeks[w].sections.reduce((a,s)=>a+s.items.length,0);}
+function doneCount(w){let c=0;weeks[w].sections.forEach((s,si)=>s.items.forEach((_,ei)=>{if(isDone(w,si,ei))c++;}));return c;}
 
 // ── Render training ──
 function renderTabs() {
-  const el = document.getElementById('weekTabs'); el.innerHTML='';
+  const el=document.getElementById('weekTabs');el.innerHTML='';
   weeks.forEach((w,i)=>{
     const btn=document.createElement('button');
     btn.className='wtab'+(i===currentWeek?' active':'');
@@ -455,7 +422,7 @@ function renderTabs() {
 
 function renderTraining() {
   renderTabs();
-  const w=weeks[currentWeek], done=doneCount(currentWeek), total=totalItems(currentWeek);
+  const w=weeks[currentWeek],done=doneCount(currentWeek),total=totalItems(currentWeek);
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('doneCount').textContent=done;
   document.getElementById('totalCount').textContent=total;
@@ -463,9 +430,9 @@ function renderTraining() {
   document.getElementById('progressPct').textContent=pct+' %';
   document.getElementById('progressFill').style.width=pct+'%';
   document.getElementById('tipBox').innerHTML='💡 '+w.tip;
-  const list=document.getElementById('exerciseList'); list.innerHTML='';
+  const list=document.getElementById('exerciseList');list.innerHTML='';
   w.sections.forEach((sec,si)=>{
-    const sh=document.createElement('div'); sh.className='section-heading'; sh.textContent=sec.name; list.appendChild(sh);
+    const sh=document.createElement('div');sh.className='section-heading';sh.textContent=sec.name;list.appendChild(sh);
     sec.items.forEach((ex,ei)=>{
       const d=isDone(currentWeek,si,ei);
       const card=document.createElement('div');
@@ -475,14 +442,14 @@ function renderTraining() {
       list.appendChild(card);
     });
   });
-  document.getElementById('completeBanner').classList.toggle('show', doneCount(currentWeek)===totalItems(currentWeek));
+  document.getElementById('completeBanner').classList.toggle('show',doneCount(currentWeek)===totalItems(currentWeek));
 }
 
 // ── Render stats ──
 function renderStats() {
   const days=[...new Set(allTrainings.map(r=>r.date))].sort();
-  const totalDays=days.length, totalEx=allTrainings.length, totalMin=totalDays*15;
-  let streak=0; const today=todayStr(); const daySet=new Set(days);
+  const totalDays=days.length,totalEx=allTrainings.length,totalMin=totalDays*15;
+  let streak=0;const today=todayStr();const daySet=new Set(days);
   let check=new Date(today+'T12:00:00');
   while(true){const s=check.toISOString().slice(0,10);if(daySet.has(s)){streak++;check.setDate(check.getDate()-1);}else break;}
   document.getElementById('statStreak').textContent=streak;
@@ -491,44 +458,34 @@ function renderStats() {
   document.getElementById('statExercises').textContent=totalEx;
   document.getElementById('statMinutes').textContent=totalMin;
 
-  // Streak grid – last 21 days
-  const el=document.getElementById('streakGrid'); el.innerHTML='';
+  const sg=document.getElementById('streakGrid');sg.innerHTML='';
   for(let i=20;i>=0;i--){
-    const d=new Date(); d.setDate(d.getDate()-i);
+    const d=new Date();d.setDate(d.getDate()-i);
     const ds=d.toISOString().slice(0,10);
     const dot=document.createElement('div');
     dot.className='streak-dot'+(daySet.has(ds)?' active':'')+(ds===today?' today':'');
-    dot.textContent=d.getDate(); dot.title=ds; el.appendChild(dot);
+    dot.textContent=d.getDate();dot.title=ds;sg.appendChild(dot);
   }
 
-  // Chart – exercises per calendar week
   const byWeek={};
   allTrainings.forEach(r=>{
     const d=new Date(r.date+'T12:00:00');
     const jan1=new Date(d.getFullYear(),0,1);
     const cw=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
-    const key='KW'+cw; byWeek[key]=(byWeek[key]||0)+1;
+    const key='KW'+String(cw).padStart(2,'0');byWeek[key]=(byWeek[key]||0)+1;
   });
   const ctx=document.getElementById('weekChart').getContext('2d');
   if(weekChart){weekChart.destroy();weekChart=null;}
-  const labels=Object.keys(byWeek).slice(-8);
+  const labels=Object.keys(byWeek).sort().slice(-8);
   if(labels.length){
-    weekChart=new Chart(ctx,{
-      type:'bar',
-      data:{labels,datasets:[{data:labels.map(k=>byWeek[k]),backgroundColor:'rgba(184,224,74,0.2)',borderColor:'rgba(184,224,74,0.7)',borderWidth:1,borderRadius:4}]},
-      options:{responsive:true,plugins:{legend:{display:false}},scales:{
-        x:{ticks:{color:'#5a5856',font:{family:'DM Mono',size:11}},grid:{color:'rgba(255,255,255,0.04)'}},
-        y:{ticks:{color:'#5a5856',font:{family:'DM Mono',size:11},stepSize:1},grid:{color:'rgba(255,255,255,0.04)'},beginAtZero:true}
-      }}
-    });
+    weekChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data:labels.map(k=>byWeek[k]),backgroundColor:'rgba(184,224,74,0.2)',borderColor:'rgba(184,224,74,0.7)',borderWidth:1,borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5a5856',font:{family:'DM Mono',size:11}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#5a5856',font:{family:'DM Mono',size:11},stepSize:1},grid:{color:'rgba(255,255,255,0.04)'},beginAtZero:true}}}});
   } else {
     ctx.canvas.parentElement.innerHTML='<div class="no-data">Noch keine Trainingsdaten</div>';
   }
 
-  // Phase progress bars
   const byPhase={0:new Set(),1:new Set(),2:new Set()};
   allTrainings.forEach(r=>{if(byPhase[r.week]!==undefined)byPhase[r.week].add(r.exercise);});
-  const bars=document.getElementById('weekProgressBars'); bars.innerHTML='';
+  const bars=document.getElementById('weekProgressBars');bars.innerHTML='';
   weeks.forEach((w,i)=>{
     const total=w.sections.reduce((a,s)=>a+s.items.length,0);
     const done=byPhase[i]?byPhase[i].size:0;
@@ -537,55 +494,26 @@ function renderStats() {
   });
 }
 
-function renderAll() { renderTraining(); if(currentTab==='stats') renderStats(); }
+function renderAll(){renderTraining();if(currentTab==='stats')renderStats();}
 
-// ── Tab ──
 function switchTab(tab) {
   currentTab=tab;
   document.getElementById('tabTraining').style.display=tab==='training'?'block':'none';
   document.getElementById('tabStats').style.display=tab==='stats'?'block':'none';
   document.getElementById('navTraining').classList.toggle('active',tab==='training');
   document.getElementById('navStats').classList.toggle('active',tab==='stats');
-  if(tab==='stats') renderStats();
+  if(tab==='stats')renderStats();
 }
 
 // ── Timer ──
-function updateTimerDisplay() {
-  const m=Math.floor(timerSeconds/60).toString().padStart(2,'0');
-  const s=(timerSeconds%60).toString().padStart(2,'0');
-  const el=document.getElementById('timerDisplay');
-  el.textContent=m+':'+s; el.className='timer-display'+(timerRunning?' running':'');
-}
-function toggleTimer() {
-  const btn=document.getElementById('timerStart');
-  if(timerRunning){clearInterval(timerInterval);timerRunning=false;btn.textContent='Start';btn.classList.remove('active');}
-  else{
-    if(timerSeconds===0)timerSeconds=presetSeconds;
-    timerRunning=true;btn.textContent='Stopp';btn.classList.add('active');
-    timerInterval=setInterval(()=>{
-      if(timerSeconds>0){timerSeconds--;updateTimerDisplay();}
-      else{clearInterval(timerInterval);timerRunning=false;btn.textContent='Start';btn.classList.remove('active');}
-    },1000);
-  }
-  updateTimerDisplay();
-}
-function resetTimer() {
-  clearInterval(timerInterval);timerRunning=false;timerSeconds=presetSeconds;
-  document.getElementById('timerStart').textContent='Start';
-  document.getElementById('timerStart').classList.remove('active');
-  updateTimerDisplay();
-}
-function setPreset(secs,el) {
-  presetSeconds=secs;timerSeconds=secs;clearInterval(timerInterval);timerRunning=false;
-  document.getElementById('timerStart').textContent='Start';
-  document.getElementById('timerStart').classList.remove('active');
-  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');updateTimerDisplay();
-}
+function updateTimerDisplay(){const m=Math.floor(timerSeconds/60).toString().padStart(2,'0');const s=(timerSeconds%60).toString().padStart(2,'0');const el=document.getElementById('timerDisplay');el.textContent=m+':'+s;el.className='timer-display'+(timerRunning?' running':'');}
+function toggleTimer(){const btn=document.getElementById('timerStart');if(timerRunning){clearInterval(timerInterval);timerRunning=false;btn.textContent='Start';btn.classList.remove('active');}else{if(timerSeconds===0)timerSeconds=presetSeconds;timerRunning=true;btn.textContent='Stopp';btn.classList.add('active');timerInterval=setInterval(()=>{if(timerSeconds>0){timerSeconds--;updateTimerDisplay();}else{clearInterval(timerInterval);timerRunning=false;btn.textContent='Start';btn.classList.remove('active');}},1000);}updateTimerDisplay();}
+function resetTimer(){clearInterval(timerInterval);timerRunning=false;timerSeconds=presetSeconds;document.getElementById('timerStart').textContent='Start';document.getElementById('timerStart').classList.remove('active');updateTimerDisplay();}
+function setPreset(secs,el){presetSeconds=secs;timerSeconds=secs;clearInterval(timerInterval);timerRunning=false;document.getElementById('timerStart').textContent='Start';document.getElementById('timerStart').classList.remove('active');document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');updateTimerDisplay();}
 
 // ── Init ──
 async function init() {
-  const {data:{session}} = await sb.auth.getSession();
+  const {data:{session}}=await sb.auth.getSession();
   document.getElementById('loadingOverlay').style.display='none';
   if(session){
     userId=session.user.id;
