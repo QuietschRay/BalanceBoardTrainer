@@ -181,6 +181,12 @@
   .loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;}
   .loading-txt{font-family:'DM Mono',monospace;font-size:13px;color:var(--text3);letter-spacing:.08em;}
 
+  /* Round dots */
+  .round-dots{display:flex;gap:4px;align-items:center;margin-left:4px;}
+  .round-dot{width:8px;height:8px;border-radius:50%;background:var(--surface2);border:0.5px solid var(--border2);transition:all .2s;}
+  .round-dot.done{background:var(--accent2);border-color:var(--accent2);}
+  .round-dot.active{background:var(--accent);border-color:var(--accent);box-shadow:0 0 4px rgba(184,224,74,0.5);}
+
   @media(max-width:480px){
     .app{padding:1.25rem 1rem 5rem;}
     h1{font-size:22px;}
@@ -328,16 +334,16 @@ const weeks=[
   ]}
 ];
 
-// ── Parse time → seconds ──
-function parseSecs(t){
+// ── Parse time → {secs per round, total rounds} ──
+function parseTimer(t){
   let m;
-  m=t.match(/^(\d+)\s*min$/);if(m)return+m[1]*60;
-  m=t.match(/(\d+)\s*×\s*(\d+)\s*min/);if(m)return+m[2]*60;
-  m=t.match(/(\d+)\s*×\s*(\d+)\s*Sek/);if(m)return+m[2];
-  m=t.match(/(\d+)\s*×\s*(\d+)\s*Wdh/);if(m)return 30;
-  m=t.match(/×\s*max/);if(m)return 60;
-  m=t.match(/(\d+)\s*Sek/);if(m)return+m[1];
-  return 60;
+  m=t.match(/^(\d+)\s*min$/);if(m)return{secs:+m[1]*60,rounds:1};
+  m=t.match(/(\d+)\s*×\s*(\d+)\s*min/);if(m)return{secs:+m[2]*60,rounds:+m[1]};
+  m=t.match(/(\d+)\s*×\s*(\d+)\s*Sek/);if(m)return{secs:+m[2],rounds:+m[1]};
+  m=t.match(/(\d+)\s*×\s*(\d+)\s*Wdh/);if(m)return{secs:30,rounds:+m[1]};
+  m=t.match(/(\d+)\s*×\s*max/);if(m)return{secs:60,rounds:+m[1]};
+  m=t.match(/(\d+)\s*Sek/);if(m)return{secs:+m[1],rounds:1};
+  return{secs:60,rounds:1};
 }
 
 // ── Timer state (survives re-renders) ──
@@ -348,8 +354,8 @@ const RING_C=100.53; // 2*PI*16
 function getTS(wi,si,ei){
   const k=`${wi}-${si}-${ei}`;
   if(!timerState[k]){
-    const total=parseSecs(weeks[wi].sections[si].items[ei].time);
-    timerState[k]={total,remaining:total,running:false,intervalId:null};
+    const {secs,rounds}=parseTimer(weeks[wi].sections[si].items[ei].time);
+    timerState[k]={total:secs,remaining:secs,rounds,roundsLeft:rounds,running:false,intervalId:null};
   }
   return timerState[k];
 }
@@ -361,6 +367,7 @@ function updateTimerDOM(wi,si,ei){
   const dispEl=document.getElementById(`td-${k}`);
   const startBtn=document.getElementById(`ts-${k}`);
   const ringEl=document.getElementById(`tr-${k}`);
+  const roundEl=document.getElementById(`trd-${k}`);
   if(!dispEl)return;
   const m=Math.floor(ts.remaining/60).toString().padStart(2,'0');
   const s=(ts.remaining%60).toString().padStart(2,'0');
@@ -370,6 +377,12 @@ function updateTimerDOM(wi,si,ei){
   if(ringEl){
     const offset=ts.total>0?RING_C*(1-ts.remaining/ts.total):0;
     ringEl.style.strokeDashoffset=offset;
+  }
+  if(roundEl&&ts.rounds>1){
+    const done=ts.rounds-ts.roundsLeft;
+    roundEl.innerHTML=Array.from({length:ts.rounds},(_,i)=>
+      `<span class="round-dot${i<done?' done':i===done&&ts.running?' active':''}"></span>`
+    ).join('');
   }
   // Update card border
   const card=document.getElementById(`card-${k}`);
@@ -404,6 +417,80 @@ function updateCardDoneDOM(wi,si,ei,isDoneNow){
   if(timerRow)timerRow.style.pointerEvents=isDoneNow?'none':'';
 }
 
+// ── Audio ──
+let audioCtx=null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  // Resume if suspended (browser autoplay policy)
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+// Achievement sound: rising arpeggio + sustain (game "level up" feel)
+function playAchievement(){
+  try{
+    const ctx=getAudioCtx();
+    const now=ctx.currentTime;
+    // Three rising notes
+    [[0,523.25],[0.12,659.25],[0.24,783.99],[0.36,1046.5]].forEach(([t,freq])=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type='sine';
+      osc.frequency.setValueAtTime(freq,now+t);
+      gain.gain.setValueAtTime(0,now+t);
+      gain.gain.linearRampToValueAtTime(0.22,now+t+0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001,now+t+0.45);
+      osc.start(now+t);osc.stop(now+t+0.5);
+    });
+    // Warm chord underneath
+    [523.25,659.25,783.99].forEach(freq=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type='triangle';
+      osc.frequency.setValueAtTime(freq,now+0.36);
+      gain.gain.setValueAtTime(0,now+0.36);
+      gain.gain.linearRampToValueAtTime(0.07,now+0.42);
+      gain.gain.exponentialRampToValueAtTime(0.001,now+1.2);
+      osc.start(now+0.36);osc.stop(now+1.3);
+    });
+  }catch(e){console.warn('Audio error',e);}
+}
+
+// Respawn sound: quick descending blip (game "retry" feel)
+function playRespawn(){
+  try{
+    const ctx=getAudioCtx();
+    const now=ctx.currentTime;
+    [[0,440],[0.09,349.23],[0.18,261.63]].forEach(([t,freq])=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type='square';
+      osc.frequency.setValueAtTime(freq,now+t);
+      gain.gain.setValueAtTime(0,now+t);
+      gain.gain.linearRampToValueAtTime(0.08,now+t+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001,now+t+0.14);
+      osc.start(now+t);osc.stop(now+t+0.18);
+    });
+  }catch(e){console.warn('Audio error',e);}
+}
+
+// Short "ding" between rounds
+function playRoundDone(){
+  try{
+    const ctx=getAudioCtx();const now=ctx.currentTime;
+    const osc=ctx.createOscillator();const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.type='sine';osc.frequency.setValueAtTime(880,now);
+    gain.gain.setValueAtTime(0,now);
+    gain.gain.linearRampToValueAtTime(0.18,now+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001,now+0.25);
+    osc.start(now);osc.stop(now+0.3);
+  }catch(e){}
+}
+
 // ── Timer actions ──
 function startStopTimer(wi,si,ei){
   const ts=getTS(wi,si,ei);
@@ -411,7 +498,11 @@ function startStopTimer(wi,si,ei){
     clearInterval(ts.intervalId);ts.running=false;ts.intervalId=null;
     updateTimerDOM(wi,si,ei);return;
   }
-  if(ts.remaining<=0)ts.remaining=ts.total;
+  if(ts.remaining<=0){
+    // Start next round if rounds left
+    if(ts.roundsLeft>0){ts.remaining=ts.total;}
+    else{return;} // all done, nothing to start
+  }
   ts.running=true;
   updateTimerDOM(wi,si,ei);
   ts.intervalId=setInterval(()=>{
@@ -419,19 +510,31 @@ function startStopTimer(wi,si,ei){
     updateTimerDOM(wi,si,ei);
     if(ts.remaining<=0){
       clearInterval(ts.intervalId);ts.running=false;ts.intervalId=null;
-      updateTimerDOM(wi,si,ei);
-      // Auto-mark done — check not already done
-      const doneset=doneForDate(selectedDateStr());
-      const exName=weeks[wi].sections[si].items[ei].name;
-      const secName=weeks[wi].sections[si].name;
-      if(!doneset[`${wi}-${secName}-${exName}`]) doMarkDone(wi,si,ei);
+      ts.roundsLeft--;
+      if(ts.roundsLeft>0){
+        // Round done, more left — play short round-done beep and pause for next round
+        playRoundDone();
+        ts.remaining=ts.total;
+        updateTimerDOM(wi,si,ei);
+      } else {
+        // All rounds done
+        updateTimerDOM(wi,si,ei);
+        playAchievement();
+        const doneset=doneForDate(selectedDateStr());
+        const exName=weeks[wi].sections[si].items[ei].name;
+        const secName=weeks[wi].sections[si].name;
+        if(!doneset[`${wi}-${secName}-${exName}`]) doMarkDone(wi,si,ei);
+      }
     }
   },1000);
 }
 
 function resetTimer(wi,si,ei){
   const ts=getTS(wi,si,ei);
-  clearInterval(ts.intervalId);ts.running=false;ts.intervalId=null;ts.remaining=ts.total;
+  const wasUsed=ts.remaining<ts.total||ts.roundsLeft<ts.rounds;
+  if(wasUsed) playRespawn();
+  clearInterval(ts.intervalId);ts.running=false;ts.intervalId=null;
+  ts.remaining=ts.total;ts.roundsLeft=ts.rounds;
   updateTimerDOM(wi,si,ei);
 }
 
@@ -579,6 +682,7 @@ function renderTraining(){
               stroke-linecap="round"/>
           </svg>
           <div id="td-${k}" class="ex-timer-display${ts.running?' running':''}">${m}:${s}</div>
+          ${ts.rounds>1?`<div class="round-dots" id="trd-${k}">${Array.from({length:ts.rounds},(_,i)=>{const done2=ts.rounds-ts.roundsLeft;return '<span class="round-dot'+(i<done2?' done':i===done2&&ts.running?' active':'')+'"></span>';}).join('')}</div>`:''}
           <div class="ex-timer-btns">
             <button id="ts-${k}" class="ex-tbtn ex-tbtn-start${ts.running?' active':''}"
               onclick="startStopTimer(${currentWeek},${si},${ei})">${ts.running?'Stopp':'Start'}</button>
